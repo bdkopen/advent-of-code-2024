@@ -9,5 +9,7 @@ macro_rules! run_test {
 }
 
 fn main() {
-    run_test!(year2024, day01);
+    // run_test!(year2024, day01);
+    // run_test!(year2024, day02);
+    run_test!(year2024, day03);
 }
