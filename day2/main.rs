@@ -38,15 +38,21 @@ fn main() {
     let mut safe_report_count: i32 = 0;
 
     for report in reports {
-        let report_length = report.len();
+        let level_length = report.len();
 
         let mut report_direction: Option<ReportDirection> = None;
 
-        for i in 0..report_length {
+        let mut failed_level_count = 0;
+
+        for i in 0..level_length {
+
+            // We only fail a report if there are many level failuers.
+            if failed_level_count > 1 {
+                break;
+            }
 
             // If the end of the array has been found, pass the report.
-            if report_length == i+1 {
-                println!("Print {:?}", report);
+            if level_length == i+1 {
                 safe_report_count += 1;
                 break;
             }
@@ -58,9 +64,12 @@ fn main() {
         
             // Check if the report is unsafe
             if difference > 3 || difference < 1 {
-                break;
+                failed_level_count += 1;
+                continue;
             }
 
+            // All reports must either count up or count down. This checks
+            // that the report is counting the correct direction.
             if report_direction == None {
                 if current_value > next_value {
                     report_direction = Some(ReportDirection::Down);
@@ -68,15 +77,16 @@ fn main() {
                     report_direction = Some(ReportDirection::Up);
                 }
             } else {
+                
                 // Check that the next value matches the required report direction
                 if current_value > next_value && report_direction == Some(ReportDirection::Up) {
-                    break;
+                    failed_level_count += 1;
+                    continue;
                 } else if current_value < next_value && report_direction == Some(ReportDirection::Down) {
-                    break;
+                    failed_level_count += 1;
+                    continue;
                 }
             }
-
-
         }
     }
 
