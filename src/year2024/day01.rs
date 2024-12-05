@@ -15,7 +15,7 @@ where P: AsRef<Path>, {
 fn read_file() -> (Vec<i32>, Vec<i32>) {
     let mut list1: Vec<i32> = Vec::new();
     let mut list2: Vec<i32> = Vec::new();
-    if let Ok(lines) = read_lines("./input.txt") {
+    if let Ok(lines) = read_lines("./input/year2024/day01.txt") {
         // Consumes the iterator, returns an (Optional) String
         for line in lines.flatten() {
             let parts: Vec<&str> = line
@@ -94,7 +94,7 @@ fn similarity(list1: Vec<i32>, list2: Vec<i32>) -> i32 {
     return simplicity_score;
 }
 
-fn main() {
+pub fn run() {
     let (mut list1, mut list2) = read_file();
 
     // Small data sets for testing

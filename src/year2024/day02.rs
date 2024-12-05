@@ -32,8 +32,8 @@ enum ReportDirection {
     Down,
 }
 
-fn main() {
-    let reports = read_file("./input.txt");
+pub fn run() {
+    let reports = read_file("./input/year2024/day02.txt");
 
     let mut safe_report_count: i32 = 0;
 
