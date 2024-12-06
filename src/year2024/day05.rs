@@ -91,13 +91,79 @@ fn part1((
     return middle_page_number_total;
 }
 
+// Move pages into valid locations.
+// Return the sum of the middle index of all arrays that received an update.
+fn part2((
+    ordering_rules,
+    page_updates
+): (HashMap<i32, Vec<i32>>, Vec<Vec<i32>>)) -> i32 {
+    let mut middle_page_number_total: i32 = 0;
+
+    for mut update in page_updates {
+        let mut has_changed = false;
+
+        let mut i = update.len() - 1;
+
+        while i > 0 {
+            match ordering_rules.get(&update[i]) {
+                Some(after_values) => {
+                    let mut compare_i = i-1;
+                    // Loop until we are out of indexes to compare against.
+                    loop {
+                        // If the compared index value is not supposed to go after the current index,
+                        // no switch is necessary and we can continue.
+                        if !after_values.contains(&update[compare_i]) {
+                            if compare_i == 0 {
+                                break;
+                            }
+
+                            compare_i -= 1;
+                            
+                            continue;
+                        }
+
+                        // Otherwise we must switch the index values.
+                        has_changed = true;
+
+                        let temp = update[i];
+                        update[i] = update[compare_i];
+                        update[compare_i] = temp;
+
+                        // We need to re-run the search because the switch
+                        // may move numbers into an order that needs to be re-compared.
+                        i += 1;
+                        break;
+                    }
+                },
+                _ => {},
+            }
+
+            i -= 1;
+        }
+
+        // Don't add the middle index if there were no changes to the update.
+        if !has_changed {
+            continue;
+        }
+
+        let update_length = update.len();
+        let middle_index = update_length / 2;
+
+        middle_page_number_total += update[middle_index];
+        
+    }
+
+    return middle_page_number_total;
+}
+
 pub fn run() -> (i32, i32) {
     let input = read_file("./input/year2024/day05.txt");
 
-    println!("{:?}", part1(input));
+    let result1 = part1(input.clone());
+    let result2 = part2(input);
 
-    return (
-        10,
-        10,
-    );
+    println!("Part1: {:?}", result1);
+    println!("Part2: {:?}", result2);
+
+    return (result1, result2);
 }
