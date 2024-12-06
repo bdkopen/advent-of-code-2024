@@ -13,8 +13,7 @@ where
     Ok(io::BufReader::new(file).lines())
 }
 
-fn read_file(filename: &str) -> 
-(HashMap<i32, Vec<i32>>, Vec<Vec<i32>>) {
+fn read_file(filename: &str) -> (HashMap<i32, Vec<i32>>, Vec<Vec<i32>>) {
     let mut ordering_rules: HashMap<i32, Vec<i32>> = HashMap::new();
     let mut page_updates = vec![];
 
