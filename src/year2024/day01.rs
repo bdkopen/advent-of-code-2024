@@ -1,12 +1,14 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
-use std::collections::HashMap;
 
 // The output is wrapped in a Result to allow matching on errors.
 // Returns an Iterator to the Reader of the lines of the file.
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where P: AsRef<Path>, {
+where
+    P: AsRef<Path>,
+{
     let file = File::open(filename)?;
     Ok(io::BufReader::new(file).lines())
 }
@@ -18,9 +20,7 @@ fn read_file() -> (Vec<i32>, Vec<i32>) {
     if let Ok(lines) = read_lines("./input/year2024/day01.txt") {
         // Consumes the iterator, returns an (Optional) String
         for line in lines.flatten() {
-            let parts: Vec<&str> = line
-                .split_whitespace()
-                .collect();
+            let parts: Vec<&str> = line.split_whitespace().collect();
             list1.push(parts[0].parse::<i32>().unwrap());
             list2.push(parts[1].parse::<i32>().unwrap());
         }
@@ -31,14 +31,13 @@ fn read_file() -> (Vec<i32>, Vec<i32>) {
 // Given two sorted lists, determine the difference between each entry.
 fn difference(list1: &Vec<i32>, list2: &Vec<i32>) -> i32 {
     let mut total_distance = 0;
- 
+
     for n in 0..list1.len() {
         let difference: i32 = list2[n] - list1[n];
         total_distance += difference.abs();
     }
     return total_distance;
 }
-
 
 fn create_location_hash(list: Vec<i32>) -> HashMap<i32, i32> {
     let mut set = HashMap::new();
@@ -52,11 +51,10 @@ fn create_location_hash(list: Vec<i32>) -> HashMap<i32, i32> {
         let current_value = list[n];
 
         // If this is the last index of the array, there are no other locations to check.
-        if n+1 == list_length {
+        if n + 1 == list_length {
             set.insert(current_value, count);
             break;
         }
-
 
         // Loop through the array until the end is met or the next value is not the same as the current.
         while n != list_length {
@@ -87,7 +85,7 @@ fn similarity(list1: Vec<i32>, list2: Vec<i32>) -> i32 {
         // this entry.
         match set2.get(location_id) {
             Some(count2) => simplicity_score += location_id * count2,
-            _ => {},
+            _ => {}
         }
     }
 
