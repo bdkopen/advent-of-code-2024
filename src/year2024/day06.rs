@@ -35,28 +35,28 @@ fn part1(mut grid: Grid<char>) -> u32 {
 
     println!("{:?}", initial_coordinates);
 
-    let (mut x, mut y) = initial_coordinates.unwrap();
+    let (mut column_i, mut row_i) = initial_coordinates.unwrap();
     let mut direction: Direction = Direction::Up;
     loop {
         // Problem: checked_add and checked_sub modify x and y
-        let (next_x_option, next_y_option) = match direction {
-            Direction::Up => (Some(x), Some(y + 1)),
-            Direction::Down if y > 1 => (Some(x), Some(y - 1)),
-            Direction::Right => (Some(x + 1), Some(y)),
-            Direction::Left if x > 0 => (Some(x - 1), Some(y)),
+        let (next_col_i_option, next_row_i_option) = match direction {
+            Direction::Up => (Some(column_i), Some(row_i + 1)),
+            Direction::Down if row_i > 1 => (Some(column_i), Some(row_i - 1)),
+            Direction::Right => (Some(column_i + 1), Some(row_i)),
+            Direction::Left if column_i > 0 => (Some(column_i - 1), Some(row_i)),
             _ => (None, None),
         };
 
-        println!("{:?},{:?}", next_x_option, next_y_option);
+        println!("{:?},{:?}", next_col_i_option, next_row_i_option);
 
         // If there is no next grid value, we are outside of the grid bounds.
-        if next_x_option == None || next_y_option == None {
+        if next_col_i_option == None || next_row_i_option == None {
             break;
         }
 
-        let (next_x, next_y) = (next_x_option.unwrap(), next_y_option.unwrap());
+        let (next_col_i, next_row_i) = (next_col_i_option.unwrap(), next_row_i_option.unwrap());
 
-        let grid_next_option = grid.get(next_x, next_y);
+        let grid_next_option = grid.get(row_i, column_i);
 
         if grid_next_option == None {
             break;
@@ -83,10 +83,14 @@ fn part1(mut grid: Grid<char>) -> u32 {
             step_count += 1;
         }
 
-        println!("final: {:?}{:?}", (x, y), (next_x, next_y));
+        println!(
+            "final: {:?}{:?}",
+            (row_i, column_i),
+            (next_col_i, next_row_i)
+        );
 
-        grid[(x, y)] = 'X';
-        (x, y) = (next_x, next_y);
+        grid[(row_i, column_i)] = 'X';
+        (row_i, column_i) = (next_col_i, next_row_i);
     }
 
     return step_count;
