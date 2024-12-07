@@ -21,9 +21,13 @@ enum Direction {
     Right,
 }
 
-fn part1(mut grid: Grid<char>) -> u32 {
-    let mut step_count = 0;
-
+// Given a grid, walk unto end_cords is reached.
+// A callback function is called on every iteration of the loop.
+fn process_grid<F: FnMut((usize, usize))>(
+    grid: Grid<char>,
+    end_cords: (Option<usize>, Option<usize>),
+    func: &mut F,
+) {
     // Find the initial x,y coordinates of the guard
     let mut initial_coordinates: Option<(usize, usize)> = None;
     for cell in grid.indexed_iter() {
@@ -33,17 +37,12 @@ fn part1(mut grid: Grid<char>) -> u32 {
         }
     }
 
-    println!("{:?}", initial_coordinates);
-
     let (mut row_i, mut column_i) = initial_coordinates.unwrap();
-
-    // Mark the starting position as visited.
-    step_count += 1;
-    grid[(row_i, column_i)] = 'X';
 
     let mut direction: Direction = Direction::Up;
     loop {
-        // Problem: checked_add and checked_sub modify x and y
+        func((row_i, column_i));
+
         let (next_row_i_option, next_col_i_option) = match direction {
             Direction::Up if row_i > 0 => (Some(row_i - 1), Some(column_i)),
             Direction::Down => (Some(row_i + 1), Some(column_i)),
@@ -55,7 +54,7 @@ fn part1(mut grid: Grid<char>) -> u32 {
         println!("{:?},{:?}", next_row_i_option, next_col_i_option);
 
         // If there is no next grid value, we are outside of the grid bounds.
-        if next_col_i_option == None || next_row_i_option == None {
+        if next_col_i_option == end_cords.0 || next_row_i_option == end_cords.1 {
             break;
         }
 
@@ -69,8 +68,6 @@ fn part1(mut grid: Grid<char>) -> u32 {
 
         let grid_next = grid_next_option.unwrap();
 
-        println!("{}", grid_next);
-
         // If there is an obstacle, rotate the direction and loop again
         if grid_next == &'#' {
             direction = match direction {
@@ -83,28 +80,26 @@ fn part1(mut grid: Grid<char>) -> u32 {
             continue;
         }
 
-        // We haven't been to the new space, so we increment the count.
-        if grid_next != &'X' {
-            step_count += 1;
-            grid[(next_row_i, next_col_i)] = 'X';
-        }
-
-        println!(
-            "previous: {:?},final: {:?}",
-            (row_i, column_i),
-            (next_row_i, next_col_i)
-        );
-
         (row_i, column_i) = (next_row_i, next_col_i);
     }
-
-    println!("{:?}", grid);
-
-    return step_count;
 }
 
 pub fn run() {
     let grid = process_file("input/year2024/day06.txt");
 
-    println!("{:?}", part1(grid));
+    let mut part1_grid = grid.clone();
+    let mut part1_count = 0;
+
+    process_grid(grid, (None, None), &mut |(row_i, col_i)| {
+        let grid_next_option = part1_grid.get(row_i, col_i);
+
+        if grid_next_option == Some(&'X') {
+            return;
+        }
+
+        part1_count += 1;
+        part1_grid[(row_i, col_i)] = 'X';
+    });
+
+    println!("{:?}", part1_count);
 }
