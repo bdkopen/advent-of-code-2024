@@ -12,7 +12,7 @@ fn process_file(filename: &str) -> Grid<char> {
 
     return grid;
 }
-
+//
 #[derive(Debug)]
 enum Direction {
     Up,
@@ -21,13 +21,7 @@ enum Direction {
     Right,
 }
 
-// Given a grid, walk unto end_cords is reached.
-// A callback function is called on every iteration of the loop.
-fn process_grid<F: FnMut((usize, usize))>(
-    grid: Grid<char>,
-    end_cords: (Option<usize>, Option<usize>),
-    func: &mut F,
-) {
+fn find_initial_cords(grid: &Grid<char>) -> (usize, usize) {
     // Find the initial x,y coordinates of the guard
     let mut initial_coordinates: Option<(usize, usize)> = None;
     for cell in grid.indexed_iter() {
@@ -37,7 +31,18 @@ fn process_grid<F: FnMut((usize, usize))>(
         }
     }
 
-    let (mut row_i, mut column_i) = initial_coordinates.unwrap();
+    return initial_coordinates.unwrap();
+}
+
+// Given a grid, walk unto end_cords is reached.
+// A callback function is called on every iteration of the loop.
+fn process_grid<F: FnMut((usize, usize))>(
+    grid: &Grid<char>,
+    initial_cords: (usize, usize),
+    end_cords: (Option<usize>, Option<usize>),
+    func: &mut F,
+) {
+    let (mut row_i, mut column_i) = initial_cords;
 
     let mut direction: Direction = Direction::Up;
     loop {
@@ -54,7 +59,7 @@ fn process_grid<F: FnMut((usize, usize))>(
         println!("{:?},{:?}", next_row_i_option, next_col_i_option);
 
         // If there is no next grid value, we are outside of the grid bounds.
-        if next_col_i_option == end_cords.0 || next_row_i_option == end_cords.1 {
+        if next_row_i_option == end_cords.0 || next_col_i_option == end_cords.1 {
             break;
         }
 
@@ -87,10 +92,12 @@ fn process_grid<F: FnMut((usize, usize))>(
 pub fn run() {
     let grid = process_file("input/year2024/day06.txt");
 
+    let initial_cords = find_initial_cords(&grid);
+
     let mut part1_grid = grid.clone();
     let mut part1_count = 0;
 
-    process_grid(grid, (None, None), &mut |(row_i, col_i)| {
+    process_grid(&grid, initial_cords, (None, None), &mut |(row_i, col_i)| {
         let grid_next_option = part1_grid.get(row_i, col_i);
 
         if grid_next_option == Some(&'X') {
