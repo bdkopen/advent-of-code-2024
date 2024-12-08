@@ -1,5 +1,6 @@
 use crate::util::file::read;
 use grid::*;
+use std::collections::HashSet;
 
 fn process_file(filename: &str) -> Grid<char> {
     let mut grid = grid![];
@@ -13,12 +14,18 @@ fn process_file(filename: &str) -> Grid<char> {
     return grid;
 }
 //
-#[derive(Debug)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 enum Direction {
     Up,
     Down,
     Left,
     Right,
+}
+
+#[derive(Hash, Eq, PartialEq, Debug)]
+struct GridCell {
+    index: (usize, usize),
+    direction: Direction,
 }
 
 fn find_initial_cords(grid: &Grid<char>) -> (usize, usize) {
@@ -39,12 +46,13 @@ fn find_initial_cords(grid: &Grid<char>) -> (usize, usize) {
 fn process_grid<F: FnMut((usize, usize))>(
     grid: &Grid<char>,
     initial_cords: (usize, usize),
-    end_cords: (Option<usize>, Option<usize>),
     func: &mut F,
-) {
+) -> bool {
     let (mut row_i, mut column_i) = initial_cords;
-
     let mut direction: Direction = Direction::Up;
+
+    let mut path_steps = HashSet::new();
+
     loop {
         func((row_i, column_i));
 
@@ -56,11 +64,9 @@ fn process_grid<F: FnMut((usize, usize))>(
             _ => (None, None),
         };
 
-        println!("{:?},{:?}", next_row_i_option, next_col_i_option);
-
         // If there is no next grid value, we are outside of the grid bounds.
-        if next_row_i_option == end_cords.0 || next_col_i_option == end_cords.1 {
-            break;
+        if next_row_i_option == None || next_col_i_option == None {
+            break false;
         }
 
         let (next_row_i, next_col_i) = (next_row_i_option.unwrap(), next_col_i_option.unwrap());
@@ -68,7 +74,7 @@ fn process_grid<F: FnMut((usize, usize))>(
         let grid_next_option = grid.get(next_row_i, next_col_i);
 
         if grid_next_option == None {
-            break;
+            break false;
         }
 
         let grid_next = grid_next_option.unwrap();
@@ -81,8 +87,19 @@ fn process_grid<F: FnMut((usize, usize))>(
                 Direction::Down => Direction::Left,
                 Direction::Left => Direction::Up,
             };
-            println!("Rotate {:?}", direction);
             continue;
+        }
+
+        // Check if we've already navigated to this exact index.
+        // If we've already been to an index with the same direction, it means
+        // the guard is stuck in an infinite loop.
+        let is_new = path_steps.insert(GridCell {
+            index: (next_row_i, next_col_i),
+            direction: direction.clone(),
+        });
+
+        if is_new == false {
+            break true;
         }
 
         (row_i, column_i) = (next_row_i, next_col_i);
@@ -95,9 +112,11 @@ pub fn run() {
     let initial_cords = find_initial_cords(&grid);
 
     let mut part1_grid = grid.clone();
+    let mut part2_grid = grid.clone();
     let mut part1_count = 0;
+    let mut part2_count = 0;
 
-    process_grid(&grid, initial_cords, (None, None), &mut |(row_i, col_i)| {
+    process_grid(&grid, initial_cords, &mut |(row_i, col_i)| {
         let grid_next_option = part1_grid.get(row_i, col_i);
 
         if grid_next_option == Some(&'X') {
@@ -106,7 +125,18 @@ pub fn run() {
 
         part1_count += 1;
         part1_grid[(row_i, col_i)] = 'X';
+
+        // Set one obstacle
+        part2_grid[(row_i, col_i)] = '#';
+        // Test
+        let result = process_grid(&part2_grid, initial_cords, &mut |(_, _)| {});
+        if result == true {
+            part2_count += 1;
+        }
+        // Remove the placed obstacle
+        part2_grid[(row_i, col_i)] = '.';
     });
 
     println!("{:?}", part1_count);
+    println!("{:?}", part2_count);
 }
