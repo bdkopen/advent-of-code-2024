@@ -75,11 +75,7 @@ fn get_next_state(
 
 // Given a grid, walk until end_cords is reached.
 // A callback function is called on every iteration of the loop.
-fn process_grid<F: FnMut(GridCell)>(
-    grid: &Grid<char>,
-    initial_cords: GridCell,
-    func: &mut F,
-) -> bool {
+fn process_grid(grid: &Grid<char>, initial_cords: GridCell) -> Option<HashSet<GridCell>> {
     let GridCell {
         index: (mut row_i, mut col_i),
         mut direction,
@@ -97,11 +93,7 @@ fn process_grid<F: FnMut(GridCell)>(
         );
 
         if next_cords == None {
-            func(GridCell {
-                index: (row_i, col_i),
-                direction: direction,
-            });
-            break true;
+            break Some(path_steps);
         }
 
         let (next_row_i, next_col_i) = next_cords.unwrap();
@@ -119,11 +111,6 @@ fn process_grid<F: FnMut(GridCell)>(
             continue;
         };
 
-        func(GridCell {
-            index: (row_i, col_i),
-            direction: direction,
-        });
-
         // Check if we've already navigated to this exact index.
         // If we've already been to an index with the same direction, it means
         // the guard is stuck in an infinite loop.
@@ -133,51 +120,26 @@ fn process_grid<F: FnMut(GridCell)>(
         });
 
         if is_new_state == false {
-            break false;
+            break None;
         }
 
         (row_i, col_i) = (next_row_i, next_col_i);
     }
 }
 
-pub fn run() -> (i32, i32) {
-    let grid = process_file("input/year2024/day06.txt");
+pub fn run() -> (usize, usize) {
+    let grid = process_file("input/year2024/day06-test.txt");
 
     let initial_cords = find_initial_cords(&grid);
 
-    let mut part1_grid = grid.clone();
-    let mut part2_grid = grid.clone();
-    let mut part1_count = 0;
-    let mut part2_count = 0;
+    let unique_steps = process_grid(&grid, initial_cords).unwrap();
 
-    process_grid(
-        &grid,
-        initial_cords,
-        &mut |GridCell {
-                  index: (row_i, col_i),
-                  ..
-              }| {
-            let grid_current_cell = part1_grid.get(row_i, col_i);
-
-            if grid_current_cell == Some(&'X') {
-                return;
-            }
-
-            part1_count += 1;
-            part1_grid[(row_i, col_i)] = 'X';
-
-            // Set one obstacle
-            part2_grid[(row_i, col_i)] = '#';
-            // Test the grid given the new obstacle
-            let is_infinite_loop =
-                !process_grid(&part2_grid, initial_cords, &mut |GridCell { .. }| {});
-            if is_infinite_loop == true {
-                part2_count += 1;
-            }
-            // Remove the placed obstacle
-            part2_grid[(row_i, col_i)] = '.';
-        },
+    let vec: HashSet<(usize, usize)> = HashSet::from_iter(
+        unique_steps.iter().filter_map(|v| Some(v.index)), // .collect::<Vec<(usize, usize)>>(),
     );
+
+    let part1_count = vec.len();
+    let part2_count = 0;
 
     println!("{:?}", part1_count);
     println!("{:?}", part2_count);
