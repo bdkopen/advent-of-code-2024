@@ -143,28 +143,16 @@ pub fn run() -> (usize, usize) {
 
     let part1_count = consolidated_steps.len();
 
-    let part2_count = unique_steps
+    let part2_count = consolidated_steps
         .iter()
         .filter_map(|&cell| {
-            let next_cell = get_next_state(&part2_grid, &cell);
-
-            if next_cell == None {
-                return None;
-            }
-
-            let next_cell_index = next_cell.unwrap();
-
-            // If there is already an obstacle, don't attempt to place it.
-            if part2_grid.get(next_cell_index.0, next_cell_index.1) == Some(&'#') {
-                return None;
-            }
-
             // Add a temporary obstacle
-            part2_grid[next_cell_index] = '#';
+            part2_grid[cell] = '#';
+
             // Check if the guard falls into an infinite loop
-            let result = process_grid(&part2_grid, cell);
+            let result = process_grid(&part2_grid, initial_cords);
             // Remove the temporary obstacle
-            part2_grid[next_cell_index] = '.';
+            part2_grid[cell] = '.';
 
             match result {
                 Some(_set) => None,
