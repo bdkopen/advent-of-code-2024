@@ -83,6 +83,8 @@ fn process_grid(grid: &Grid<char>, initial_cords: GridCell) -> Option<HashSet<Gr
 
     let mut path_steps = HashSet::new();
 
+    path_steps.insert(initial_cords);
+
     loop {
         let next_cords = get_next_state(
             grid,
@@ -128,18 +130,50 @@ fn process_grid(grid: &Grid<char>, initial_cords: GridCell) -> Option<HashSet<Gr
 }
 
 pub fn run() -> (usize, usize) {
-    let grid = process_file("input/year2024/day06-test.txt");
+    let grid = process_file("input/year2024/day06.txt");
+    let mut part2_grid = grid.clone();
 
     let initial_cords = find_initial_cords(&grid);
 
     let unique_steps = process_grid(&grid, initial_cords).unwrap();
 
-    let vec: HashSet<(usize, usize)> = HashSet::from_iter(
-        unique_steps.iter().filter_map(|v| Some(v.index)), // .collect::<Vec<(usize, usize)>>(),
-    );
+    // Get all the steps without direction included. This is necesary for part 1.
+    let consolidated_steps: HashSet<(usize, usize)> =
+        HashSet::from_iter(unique_steps.iter().map(|v| v.index));
 
-    let part1_count = vec.len();
-    let part2_count = 0;
+    let part1_count = consolidated_steps.len();
+
+    let part2_count = unique_steps
+        .iter()
+        .filter_map(|&cell| {
+            let next_cell = get_next_state(&part2_grid, &cell);
+
+            if next_cell == None {
+                return None;
+            }
+
+            let next_cell_index = next_cell.unwrap();
+
+            // If there is already an obstacle, don't attempt to place it.
+            if part2_grid.get(next_cell_index.0, next_cell_index.1) == Some(&'#') {
+                return None;
+            }
+
+            // Add a temporary obstacle
+            part2_grid[next_cell_index] = '#';
+            // Check if the guard falls into an infinite loop
+            let result = process_grid(&part2_grid, cell);
+            // Remove the temporary obstacle
+            part2_grid[next_cell_index] = '.';
+
+            match result {
+                Some(_set) => None,
+                // Anytime we receive "None" it means that there was an infinte loop.
+                None => Some(true),
+            }
+        })
+        .collect::<Vec<bool>>()
+        .len();
 
     println!("{:?}", part1_count);
     println!("{:?}", part2_count);
