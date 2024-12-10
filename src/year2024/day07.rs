@@ -26,7 +26,12 @@ fn process_file(filename: &str) -> Vec<(u64, Vec<u64>)> {
     return vec;
 }
 
-fn evaluate(total: &u64, current_value: u64, values: &[u64]) -> Option<u64> {
+fn evaluate(
+    total: &u64,
+    current_value: u64,
+    values: &[u64],
+    check_concatenation: &bool,
+) -> Option<u64> {
     if values.len() == 0 {
         if total == &current_value {
             return Some(current_value);
@@ -44,28 +49,60 @@ fn evaluate(total: &u64, current_value: u64, values: &[u64]) -> Option<u64> {
     let value = values[0];
 
     // Evaluate the * case
-    let case = evaluate(total, &current_value * &value, &values[1..]);
+    let case = evaluate(
+        total,
+        &current_value * &value,
+        &values[1..],
+        &check_concatenation,
+    );
 
     if case.is_some() {
         return case;
     }
 
+    // Only enable this feature when we need it for evaluation.
+    if check_concatenation == &true {
+        let case = evaluate(
+            total,
+            [current_value.to_string(), value.to_string()]
+                .concat()
+                .parse::<u64>()
+                .unwrap(),
+            &values[1..],
+            &check_concatenation,
+        );
+
+        if case.is_some() {
+            return case;
+        }
+    }
+
     // If it fails, evalaute the + case
-    let case = evaluate(total, &current_value + &value, &values[1..]);
+    let case = evaluate(
+        total,
+        &current_value + &value,
+        &values[1..],
+        &check_concatenation,
+    );
 
     return case;
 }
 
-pub fn run() -> (usize, usize) {
-    let mut map = process_file("input/year2024/day07.txt");
-
-    let part1_count: u64 = map
-        .iter_mut()
-        .map(|(total, values)| evaluate(total, values[0], &values[1..]))
+fn get_calibration_result(vec: &Vec<(u64, Vec<u64>)>, check_concatenation: bool) -> u64 {
+    vec.iter()
+        .map(|(total, values)| evaluate(total, values[0], &values[1..], &check_concatenation))
         .flatten()
-        .sum();
+        .sum()
+}
+
+pub fn run() -> (usize, usize) {
+    let vec = process_file("input/year2024/day07.txt");
+
+    let part1_count = get_calibration_result(&vec, false);
+    let part2_count = get_calibration_result(&vec, true);
 
     println!("{:?}", part1_count);
+    println!("{:?}", part2_count);
 
     return (0, 0);
 }
