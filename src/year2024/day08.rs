@@ -24,55 +24,84 @@ fn calculate_antinode_pos(pos: usize, difference: usize, size: usize, add: bool)
     };
 }
 
-fn calculate_antinodes(
-    (row1_pos, col1_pos): (usize, usize),
-    (row2_pos, col2_pos): (usize, usize),
-    (row_size, col_size): (usize, usize),
+fn calculate_antinode(
+    position: (usize, usize),
+    size: (usize, usize),
+    difference: (usize, usize),
+    add: (bool, bool),
+    find_harmonics: bool,
 ) -> Vec<(usize, usize)> {
-    // Determine where the element is relative to the other antennas.
-    let antenna1_is_right = row1_pos > row2_pos;
-    let antenna1_is_below = col1_pos > col2_pos;
-
-    // Get the difference between the two vectors so we can calculate the positions of the antinodes.
-    let row_difference = if antenna1_is_right {
-        row1_pos - row2_pos
-    } else {
-        row2_pos - row1_pos
-    };
-    let col_difference = if antenna1_is_below {
-        col1_pos - col2_pos
-    } else {
-        col2_pos - col1_pos
-    };
-
-    let mut antinode_locations = vec![];
-
-    // Calculate the first antinode
-    let antinode1 = (
-        calculate_antinode_pos(row1_pos, row_difference, row_size, antenna1_is_right),
-        calculate_antinode_pos(col1_pos, col_difference, col_size, antenna1_is_below),
+    let antinode = (
+        calculate_antinode_pos(position.0, difference.0, size.0, add.0),
+        calculate_antinode_pos(position.1, difference.1, size.1, add.1),
     );
-    if antinode1.0.is_some() && antinode1.1.is_some() {
-        antinode_locations.push((antinode1.0.unwrap(), antinode1.1.unwrap()));
+    if antinode.0.is_none() || antinode.1.is_none() {
+        return vec![];
     }
+    let antinode_parsed = (antinode.0.unwrap(), antinode.1.unwrap());
 
-    // Calculate the second antinode
-    let antinode2 = (
-        calculate_antinode_pos(row2_pos, row_difference, row_size, !antenna1_is_right),
-        calculate_antinode_pos(col2_pos, col_difference, col_size, !antenna1_is_below),
-    );
-    if antinode2.0.is_some() && antinode2.1.is_some() {
-        antinode_locations.push((antinode2.0.unwrap(), antinode2.1.unwrap()));
-    }
+    // If we need to find harmonics, search recursively for valid harmonics.
+    let mut antinode_locations = if find_harmonics {
+        calculate_antinode(antinode_parsed, size, difference, add, find_harmonics)
+    } else {
+        vec![]
+    };
+    antinode_locations.push(antinode_parsed);
 
     return antinode_locations;
 }
 
-fn part1(grid: &Vec<Vec<char>>) -> usize {
+fn find_all_antinodes(
+    position1: (usize, usize),
+    position2: (usize, usize),
+    size: (usize, usize),
+    find_harmonics: bool,
+) -> Vec<(usize, usize)> {
+    // Determine where the element is relative to the other antennas.
+    let antenna1_is_right = position1.0 > position2.0;
+    let antenna1_is_below = position1.1 > position2.1;
+
+    // Get the difference between the two vectors so we can calculate the positions of the antinodes.
+    let row_difference = if antenna1_is_right {
+        position1.0 - position2.0
+    } else {
+        position2.0 - position1.0
+    };
+    let col_difference = if antenna1_is_below {
+        position1.1 - position2.1
+    } else {
+        position2.1 - position1.1
+    };
+
+    let mut antinode1 = calculate_antinode(
+        position1,
+        size,
+        (row_difference, col_difference),
+        (antenna1_is_right, antenna1_is_below),
+        find_harmonics,
+    );
+    let mut antinode2 = calculate_antinode(
+        position2,
+        size,
+        (row_difference, col_difference),
+        (!antenna1_is_right, !antenna1_is_below),
+        find_harmonics,
+    );
+    antinode1.append(&mut antinode2);
+
+    // If we are searching for harmonics, there will be a harmonic at the antenna positions.
+    if find_harmonics {
+        antinode1.push(position1);
+        antinode1.push(position2);
+    }
+
+    return antinode1;
+}
+
+fn count_antinodes(grid: &Vec<Vec<char>>, find_harmonics: bool) -> usize {
     // Determine the size of the grid.
     let grid_size_iterator = grid.iter();
-    let row_size = grid_size_iterator.len();
-    let col_size = grid.iter().next().unwrap().len();
+    let size = (grid_size_iterator.len(), grid.iter().next().unwrap().len());
 
     let mut map = HashMap::new();
 
@@ -98,15 +127,13 @@ fn part1(grid: &Vec<Vec<char>>) -> usize {
     map.iter().for_each(|(&_frequency, antenna_locations)| {
         // Loop through all antenna locations of a frequency and compare them to all remaining antenna locations
         for i in 0..antenna_locations.len() {
-            let (row1_pos, col1_pos) = antenna_locations[i];
             for j in i + 1..antenna_locations.len() {
-                let (row2_pos, col2_pos) = antenna_locations[j];
-
                 // Get the computed antinode positions
-                let antinodes = calculate_antinodes(
-                    (row1_pos, col1_pos),
-                    (row2_pos, col2_pos),
-                    (row_size, col_size),
+                let antinodes = find_all_antinodes(
+                    antenna_locations[i],
+                    antenna_locations[j],
+                    size,
+                    find_harmonics,
                 );
                 antinodes.into_iter().for_each(|antinode_position| {
                     unique_antinode_locations.insert(antinode_position);
@@ -118,12 +145,20 @@ fn part1(grid: &Vec<Vec<char>>) -> usize {
     return unique_antinode_locations.len();
 }
 
+fn part1(grid: &Vec<Vec<char>>) -> usize {
+    return count_antinodes(&grid, false);
+}
+fn part2(grid: &Vec<Vec<char>>) -> usize {
+    return count_antinodes(&grid, true);
+}
+
 pub fn run() -> (usize, usize) {
     let grid = process_file("input/year2024/day08.txt");
 
     let part1_result = part1(&grid);
+    let part2_result = part2(&grid);
 
-    println!("{}", part1_result);
+    println!("{},{}", part1_result, part2_result);
 
-    return (part1_result, 0);
+    return (part1_result, part2_result);
 }
