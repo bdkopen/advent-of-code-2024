@@ -2,13 +2,11 @@ use crate::util::file::read;
 use std::collections::{HashMap, HashSet};
 
 fn process_file(filename: &str) -> Vec<Vec<char>> {
-    let grid = read(filename)
+    return read(filename)
         .unwrap()
         .into_iter()
         .map(|line| line.unwrap().chars().collect())
         .collect();
-
-    return grid;
 }
 
 // Calculate the position of an antinode given details about the antennas.
@@ -84,12 +82,13 @@ fn find_all_antinodes(
         position2,
         size,
         (row_difference, col_difference),
+        // Invert the direction to add antinodes.
         (!antenna1_is_right, !antenna1_is_below),
         find_harmonics,
     );
     antinode1.append(&mut antinode2);
 
-    // If we are searching for harmonics, there will be a harmonic at the antenna positions.
+    // If we are searching for harmonics, there will always be a harmonic at the antenna positions.
     if find_harmonics {
         antinode1.push(position1);
         antinode1.push(position2);
@@ -122,20 +121,22 @@ fn count_antinodes(grid: &Vec<Vec<char>>, find_harmonics: bool) -> usize {
         })
     });
 
+    // Store a unique set of all antinode locations. There can only be one antinode
+    // at any given position, so this will allow us to exclude duplicates.
     let mut unique_antinode_locations = HashSet::new();
 
     map.iter().for_each(|(&_frequency, antenna_locations)| {
         // Loop through all antenna locations of a frequency and compare them to all remaining antenna locations
         for i in 0..antenna_locations.len() {
             for j in i + 1..antenna_locations.len() {
-                // Get the computed antinode positions
-                let antinodes = find_all_antinodes(
+                find_all_antinodes(
                     antenna_locations[i],
                     antenna_locations[j],
                     size,
                     find_harmonics,
-                );
-                antinodes.into_iter().for_each(|antinode_position| {
+                )
+                .into_iter()
+                .for_each(|antinode_position| {
                     unique_antinode_locations.insert(antinode_position);
                 });
             }
