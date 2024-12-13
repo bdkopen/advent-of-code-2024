@@ -16,3 +16,4 @@ I am using Advent of Code as a way to learn Rust. I attempt to use best practice
 | 5   | [Print Queue](https://adventofcode.com/2024/day/5) | [Source](src/year2024/day05.rs) |
 | 6   | [Guard Gallivant](https://adventofcode.com/2024/day/6) | [Source](src/year2024/day06.rs) |
 | 7   | [Bridge Repair](https://adventofcode.com/2024/day/7) | [Source](src/year2024/day07.rs) |
+| 8   | [Resonant Collinearity](https://adventofcode.com/2024/day/8) | [Source](src/year2024/day08.rs) |
