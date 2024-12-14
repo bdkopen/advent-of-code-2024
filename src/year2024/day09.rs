@@ -11,10 +11,10 @@ fn process_file(filename: &str) -> Vec<u32> {
         .collect();
 }
 
-fn build_memory(disk_map: Vec<u32>) -> Vec<Option<u32>> {
+fn build_memory(disk_map: Vec<u32>) -> Vec<Option<usize>> {
     let mut file_id = 0;
 
-    let mut memory: Vec<Option<u32>> = vec![];
+    let mut memory: Vec<Option<usize>> = vec![];
 
     disk_map
         .iter()
@@ -38,17 +38,21 @@ fn build_memory(disk_map: Vec<u32>) -> Vec<Option<u32>> {
     return memory;
 }
 
-fn calculate_checksum(memory: &Vec<Option<u32>>) -> usize {
+fn calculate_checksum(memory: &Vec<Option<usize>>) -> usize {
     return memory
         .iter()
-        // Remove any free memory locations because they will never add to the checksum
-        .filter(|value| value.is_some())
         .enumerate()
-        .map(|(pos, id)| pos * (id.unwrap() as usize))
+        .filter_map(|(pos, id)| {
+            if id.is_some() {
+                return Some(pos * (id.unwrap()));
+            } else {
+                None
+            }
+        })
         .sum();
 }
 
-fn part1(memory: &mut Vec<Option<u32>>) -> usize {
+fn part1(mut memory: Vec<Option<usize>>) -> usize {
     let mut free_memory_index = 0;
     let mut file_block_index = memory.len() - 1;
 
@@ -67,16 +71,96 @@ fn part1(memory: &mut Vec<Option<u32>>) -> usize {
         memory.swap(free_memory_index, file_block_index);
     }
 
-    return calculate_checksum(memory);
+    return calculate_checksum(&memory);
+}
+
+fn part2(mut memory: Vec<Option<usize>>) -> usize {
+    let mut file_block_index = memory.len() - 1;
+
+    // Each interation of the loop should attempt to move a file block to a
+    // free memory space.
+    loop {
+        // Iterate until a file block index is found.
+        while memory[file_block_index].is_none() {
+            file_block_index -= 1;
+        }
+        let mut file_block_first_index = file_block_index;
+
+        // Get the first index of the file block
+        while memory[file_block_first_index] == memory[file_block_index] {
+            if file_block_first_index == 0 {
+                break;
+            }
+            file_block_first_index -= 1;
+        }
+
+        if file_block_first_index == 0 {
+            break;
+        }
+
+        let block_size = file_block_index - file_block_first_index;
+
+        let mut free_memory_index = 0;
+        let mut free_memory_block_size = 0;
+        // Try to find available free memory space
+        loop {
+            // Skip memory that has values to try and find available empty memory.
+            if memory[free_memory_index].is_some() {
+                free_memory_index += 1;
+                continue;
+            }
+
+            // If we start looking at free memory after the current file blocks index,
+            // we know there isn't an availble spot and can return early.
+            if free_memory_index + free_memory_block_size >= file_block_first_index {
+                free_memory_block_size = 0;
+                break;
+            }
+
+            // Determine the size of the empty memory.
+            if memory[free_memory_index + free_memory_block_size].is_none() {
+                free_memory_block_size += 1;
+                continue;
+            }
+
+            // If the file fits into the free memory, stop looping.
+            if free_memory_block_size >= block_size {
+                break;
+            }
+
+            free_memory_index = free_memory_index + free_memory_block_size;
+            free_memory_block_size = 0;
+        }
+
+        // Swap if the block sizes are equal
+        if file_block_index > free_memory_index && free_memory_block_size >= block_size {
+            for i in 0..block_size {
+                if memory[free_memory_index + i].is_some() {
+                    println!(
+                        "SWAP {:?} <-> {:?}",
+                        memory[free_memory_index + i],
+                        memory[file_block_index - i]
+                    );
+                }
+                memory.swap(free_memory_index + i, file_block_index - i);
+            }
+        }
+
+        // Update the file block index references.
+        file_block_index = file_block_first_index;
+    }
+
+    return calculate_checksum(&memory);
 }
 
 pub fn run() -> (usize, usize) {
     let disk_map = process_file("input/year2024/day09.txt");
     let memory = build_memory(disk_map);
 
-    let check_sum1 = part1(&mut memory.clone());
+    let checksum1 = part1(memory.clone());
+    let checksum2 = part2(memory);
 
-    println!("{}", check_sum1);
+    println!("{} - {}", checksum1, checksum2);
 
-    return (check_sum1, 10);
+    return (checksum1, checksum2);
 }
