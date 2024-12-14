@@ -55,48 +55,41 @@ fn determine_trailhead_score(
 
     let next_expected_height = expected_height + 1;
 
-    let mut results = vec![];
+    let mut adjacent_positions = vec![];
+
+    // Recursively check the adjacent spaces, if they exist.
     if row > 0 {
-        results.push(determine_trailhead_score(
-            (row - 1, col),
-            topographical_map,
-            next_expected_height,
-            traveled_positions,
-        ));
+        adjacent_positions.push((row - 1, col));
     }
     if col > 0 {
-        results.push(determine_trailhead_score(
-            (row, col - 1),
-            topographical_map,
-            next_expected_height,
-            traveled_positions,
-        ));
+        adjacent_positions.push((row, col - 1));
     }
     if row + 1 < topographical_map.len() {
-        results.push(determine_trailhead_score(
-            (row + 1, col),
-            topographical_map,
-            next_expected_height,
-            traveled_positions,
-        ));
+        adjacent_positions.push((row + 1, col));
     }
     if col + 1 < topographical_map[row].len() {
-        results.push(determine_trailhead_score(
-            (row, col + 1),
-            topographical_map,
-            next_expected_height,
-            traveled_positions,
-        ));
+        adjacent_positions.push((row, col + 1));
     }
 
-    return results
+    return adjacent_positions
         .iter()
+        .map(|&position| {
+            determine_trailhead_score(
+                position,
+                topographical_map,
+                next_expected_height,
+                traveled_positions,
+            )
+        })
         .fold((0, 0), |(score, rating), (found_score, found_rating)| {
             return (score + found_score, rating + found_rating);
         });
 }
 
-fn part1(topographical_map: &Vec<Vec<u32>>, trailheads: Vec<(usize, usize)>) -> (usize, usize) {
+fn compute_trails(
+    topographical_map: &Vec<Vec<u32>>,
+    trailheads: Vec<(usize, usize)>,
+) -> (usize, usize) {
     return trailheads
         .iter()
         .map(|&position| {
@@ -111,7 +104,7 @@ pub fn run() -> (usize, usize) {
     let topographical_map = process_file("input/year2024/day10.txt");
     let trailheads = find_trailheads(&topographical_map);
 
-    let (score, rating) = part1(&topographical_map, trailheads);
+    let (score, rating) = compute_trails(&topographical_map, trailheads);
 
     println!("{:?}", (score, rating));
 
