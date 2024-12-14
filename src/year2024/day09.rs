@@ -101,47 +101,44 @@ fn part2(mut memory: Vec<Option<usize>>) -> usize {
         let block_size = file_block_index - file_block_first_index;
 
         let mut free_memory_index = 0;
-        let mut free_memory_block_size = 0;
+        let mut free_memory_last_index = free_memory_index;
         // Try to find available free memory space
         loop {
             // Skip memory that has values to try and find available empty memory.
-            if memory[free_memory_index].is_some() {
+            while memory[free_memory_index].is_some() {
                 free_memory_index += 1;
-                continue;
+                free_memory_last_index = free_memory_index;
             }
 
             // If we start looking at free memory after the current file blocks index,
             // we know there isn't an availble spot and can return early.
-            if free_memory_index + free_memory_block_size >= file_block_first_index {
-                free_memory_block_size = 0;
+            if free_memory_last_index - 1 > file_block_first_index {
+                free_memory_index = 0;
+                free_memory_last_index = 0;
                 break;
             }
 
             // Determine the size of the empty memory.
-            if memory[free_memory_index + free_memory_block_size].is_none() {
-                free_memory_block_size += 1;
+            if memory[free_memory_last_index].is_none() {
+                free_memory_last_index += 1;
                 continue;
             }
 
             // If the file fits into the free memory, stop looping.
-            if free_memory_block_size >= block_size {
+            if free_memory_last_index - free_memory_index >= block_size {
                 break;
             }
 
-            free_memory_index = free_memory_index + free_memory_block_size;
-            free_memory_block_size = 0;
+            // If we get here, the current empty memory won't fit the file, so we jump to
+            // the end to try and find the next available memory index.
+            free_memory_index = free_memory_last_index;
         }
+
+        let free_memory_block_size = free_memory_last_index - free_memory_index;
 
         // Swap if the block sizes are equal
         if file_block_index > free_memory_index && free_memory_block_size >= block_size {
             for i in 0..block_size {
-                if memory[free_memory_index + i].is_some() {
-                    println!(
-                        "SWAP {:?} <-> {:?}",
-                        memory[free_memory_index + i],
-                        memory[file_block_index - i]
-                    );
-                }
                 memory.swap(free_memory_index + i, file_block_index - i);
             }
         }
@@ -160,7 +157,8 @@ pub fn run() -> (usize, usize) {
     let checksum1 = part1(memory.clone());
     let checksum2 = part2(memory);
 
-    println!("{} - {}", checksum1, checksum2);
+    println!("Part1: {:?}", checksum1);
+    println!("Part2: {:?}", checksum2);
 
     return (checksum1, checksum2);
 }
