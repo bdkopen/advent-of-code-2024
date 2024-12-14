@@ -18,3 +18,4 @@ I am using Advent of Code as a way to learn Rust. I attempt to use best practice
 | 7   | [Bridge Repair](https://adventofcode.com/2024/day/7) | [Source](src/year2024/day07.rs) |
 | 8   | [Resonant Collinearity](https://adventofcode.com/2024/day/8) | [Source](src/year2024/day08.rs) |
 | 9   | [Disk Fragmenter](https://adventofcode.com/2024/day/9) | [Source](src/year2024/day09.rs) |
+| 10  | [Hoof it](https://adventofcode.com/2024/day/10) | [Source](src/year2024/day10.rs) |
