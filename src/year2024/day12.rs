@@ -9,7 +9,7 @@ fn process_file(filename: &str) -> Vec<Vec<char>> {
         .collect();
 }
 
-fn check_square(
+fn check_plot(
     garden: &Vec<Vec<char>>,
     visited_squares: &mut HashSet<(usize, usize)>,
     expected_plot: char,
@@ -33,8 +33,9 @@ fn check_square(
     let row_length = garden.len();
     let col_length = garden[0].len();
 
+    // Check each adjacent plot.
     if row > 0 {
-        results.push(check_square(
+        results.push(check_plot(
             garden,
             visited_squares,
             expected_plot,
@@ -44,7 +45,7 @@ fn check_square(
         results.push((1, 0));
     }
     if row < row_length - 1 {
-        results.push(check_square(
+        results.push(check_plot(
             garden,
             visited_squares,
             expected_plot,
@@ -54,7 +55,7 @@ fn check_square(
         results.push((1, 0));
     }
     if col > 0 {
-        results.push(check_square(
+        results.push(check_plot(
             garden,
             visited_squares,
             expected_plot,
@@ -64,7 +65,7 @@ fn check_square(
         results.push((1, 0));
     }
     if col < col_length - 1 {
-        results.push(check_square(
+        results.push(check_plot(
             garden,
             visited_squares,
             expected_plot,
@@ -84,19 +85,21 @@ fn check_square(
 
 fn part1(garden: Vec<Vec<char>>) -> u32 {
     let mut visited_squares: HashSet<(usize, usize)> = HashSet::new();
+    let mut total_price = 0;
 
-    println!(
-        "{:?}",
-        check_square(&garden, &mut visited_squares, 'R', (0, 0))
-    );
+    for row in 0..garden.len() {
+        for col in 0..garden[row].len() {
+            let (perimeter, area) =
+                check_plot(&garden, &mut visited_squares, garden[row][col], (row, col));
+            total_price += perimeter * area;
+        }
+    }
 
-    return 10;
+    return total_price;
 }
 
 pub fn run() {
-    let garden = process_file("input/year2024/day12-test.txt");
-
-    println!("{:?}", garden);
+    let garden = process_file("input/year2024/day12.txt");
 
     let part1_price = part1(garden);
 
