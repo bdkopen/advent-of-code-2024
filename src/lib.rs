@@ -1,5 +1,7 @@
 pub mod util {
     pub mod file;
+    pub mod grid;
+    pub mod point;
 }
 
 pub mod year2024 {

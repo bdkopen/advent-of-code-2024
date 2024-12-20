@@ -1,24 +1,31 @@
 use crate::util::file::read;
+use crate::util::grid::Grid;
+use crate::util::point::Point;
 use std::collections::HashSet;
 
-fn process_file(filename: &str) -> Vec<Vec<char>> {
-    return read(filename)
-        .unwrap()
-        .flatten()
-        .map(|row| row.chars().collect())
-        .collect();
+fn process_file(filename: &str) -> Grid<char> {
+    let input_vec = read(filename).unwrap().flatten().collect::<Vec<String>>();
+    let mut contents = vec![];
+
+    input_vec
+        .iter()
+        .for_each(|row| row.chars().for_each(|char| contents.push(char)));
+
+    return Grid {
+        col_count: input_vec[0].len(),
+        row_count: input_vec.len(),
+        contents: contents,
+    };
 }
 
 fn check_plot(
-    garden: &Vec<Vec<char>>,
+    garden: &Grid<char>,
     visited_squares: &mut HashSet<(usize, usize)>,
     expected_plot: char,
     (row, col): (usize, usize),
 ) -> (u32, u32, u32) {
-    let row_length = garden.len();
-    let col_length = garden[0].len();
     // If the neighboring plot is a different plot, count this as a perimeter.
-    if garden[row][col] != expected_plot {
+    if garden[Point::new(row, col)] != expected_plot {
         return (1, 0, 0);
     }
 
@@ -27,8 +34,60 @@ fn check_plot(
         return (0, 0, 0);
     }
 
+    // Check if this the plot is at a corner. There is one side for every corner.
+    let sides: u32 = [
+        // Top left corner
+        (
+            (row.checked_sub(1), Some(col)),
+            (row.checked_sub(1), col.checked_sub(1)),
+            (Some(row), col.checked_sub(1)),
+        ),
+        // Top right corner
+        (
+            (row.checked_sub(1), Some(col)),
+            (row.checked_sub(1), col.checked_add(1)),
+            (Some(row), col.checked_add(1)),
+        ),
+        // Bottom right corner
+        (
+            (row.checked_add(1), Some(col)),
+            (row.checked_add(1), col.checked_add(1)),
+            (Some(row), col.checked_add(1)),
+        ),
+        // Bottom left corner
+        (
+            (row.checked_add(1), Some(col)),
+            (row.checked_add(1), col.checked_sub(1)),
+            (Some(row), col.checked_sub(1)),
+        ),
+    ]
+    .map(|((row1, col1), (row2, col2), (row3, col3))| {
+        let plots = (
+            garden.checked_get(&row1, &col1),
+            garden.checked_get(&row2, &col2),
+            garden.checked_get(&row3, &col3),
+        );
+
+        // Check for exterior corners
+        if plots.0 != Some(&expected_plot) && plots.2 != Some(&expected_plot) {
+            return 1;
+        }
+
+        // Check for interior corners
+        if plots.0 == Some(&expected_plot)
+            && plots.2 == Some(&expected_plot)
+            && plots.1 != Some(&expected_plot)
+        {
+            return 1;
+        }
+
+        return 0;
+    })
+    .iter()
+    .sum();
+
     // Build a vector of the adjacent plots to check
-    return vec![
+    let result = vec![
         (Some(row + 1), Some(col)),
         (row.checked_sub(1), Some(col)),
         (Some(row), Some(col + 1)),
@@ -36,22 +95,14 @@ fn check_plot(
     ]
     .iter()
     // Perform checks on each adjacent plot assuming it's a valid row and column.
-    .map(|(wrapped_row, wrapped_col)| {
-        if wrapped_row.is_none() || wrapped_col.is_none() {
+    .map(|(row, col)| {
+        if garden.checked_get(row, col).is_none() {
             return (1, 0, 0);
-        }
-        let row = wrapped_row.unwrap();
-        let col = wrapped_col.unwrap();
-        if row > row_length - 1 || col > col_length - 1 {
-            return (1, 0, 0);
-        }
+        };
+        let row = row.unwrap();
+        let col = col.unwrap();
 
-        let results = check_plot(garden, visited_squares, expected_plot, (row, col));
-
-        // Check if this the plot is at a corner. There is one side for every corner.
-        let sides = 0;
-
-        return (results.0, results.1, sides + results.2);
+        return check_plot(garden, visited_squares, expected_plot, (row, col));
     })
     .fold(
         // Initial value starts with an area of 1 to account for this plot.
@@ -64,22 +115,22 @@ fn check_plot(
             );
         },
     );
+
+    return (result.0, result.1, result.2 + sides);
 }
 
-fn part1(garden: Vec<Vec<char>>) -> (u32, u32) {
+fn part1(garden: Grid<char>) -> (u32, u32) {
     let mut visited_squares: HashSet<(usize, usize)> = HashSet::new();
     let (mut part1_price, mut part2_price) = (0, 0);
 
-    for row in 0..garden.len() {
-        for col in 0..garden[row].len() {
-            let (perimeter, area, sides) =
-                check_plot(&garden, &mut visited_squares, garden[row][col], (row, col));
-            if perimeter > 0 {
-                println!(
-                    "{},{} - {} - {},{},{}",
-                    row, col, garden[row][col], perimeter, area, sides,
-                )
-            }
+    for row in 0..garden.row_count {
+        for col in 0..garden.col_count {
+            let (perimeter, area, sides) = check_plot(
+                &garden,
+                &mut visited_squares,
+                garden[Point::new(row, col)],
+                (row, col),
+            );
 
             part1_price += perimeter * area;
             part2_price += sides * area;
