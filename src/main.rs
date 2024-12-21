@@ -20,5 +20,6 @@ fn main() {
     // run_test!(year2024, day09);
     // run_test!(year2024, day10);
     // run_test!(year2024, day11);
-    run_test!(year2024, day12);
+    // run_test!(year2024, day12);
+    run_test!(year2024, day13);
 }
