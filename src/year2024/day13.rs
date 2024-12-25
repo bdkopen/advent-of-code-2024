@@ -13,12 +13,13 @@ struct Vertex {
 #[derive(Debug, PartialEq, Eq)]
 struct Visit {
     vertex: Vertex,
-    distance: u32,
+    distance: (u32, u32), // (button a, button b)
 }
 
+// Create a custom ordering function so that the priority queue will reorder itself based on least expensive moves.
 impl Ord for Visit {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.distance.cmp(&self.distance)
+        (other.distance.0 * 3 + other.distance.1).cmp(&(&self.distance.0 * 3 + &self.distance.1))
     }
 }
 impl PartialOrd for Visit {
@@ -76,8 +77,8 @@ fn process_input(input: &Input) -> Option<u32> {
     let mut graph: HashMap<Vertex, Vec<Visit>> = HashMap::new();
 
     // Use a HashMap to create a graph that stores adjacent paths and traversal cost
-    let mut distances: HashMap<Vertex, u32> = HashMap::new();
-    distances.insert(initial_vertex, 0);
+    let mut distances: HashMap<Vertex, (u32, u32)> = HashMap::new();
+    distances.insert(initial_vertex, (0, 0));
 
     // This HashSet allows us to track what vertexes we have already visited.
     let mut visited = HashSet::new();
@@ -97,10 +98,9 @@ fn process_input(input: &Input) -> Option<u32> {
 
         // If we reached the desired prize location, return early.
         if current_vertex == input.prize {
-            return Some(token_cost);
+            println!("{:?}", token_cost);
+            return Some(token_cost.0 * 3 + token_cost.1);
         }
-
-        println!("{:?}", current_vertex);
 
         // Add the other locations to the graph and push onto the binary heap
 
@@ -112,25 +112,22 @@ fn process_input(input: &Input) -> Option<u32> {
                     x: current_vertex.x + input.a.x,
                     y: current_vertex.y + input.a.y,
                 },
-                token_cost + 3,
+                (token_cost.0 + 1, token_cost.1),
             ),
             (
                 Vertex {
                     x: current_vertex.x + input.b.x,
                     y: current_vertex.y + input.b.y,
                 },
-                token_cost + 1,
+                (token_cost.0, token_cost.1 + 1),
             ),
         ]
         .iter()
         .for_each(|(new_vertex, new_cost)| {
-            println!("{:?} = {}", new_vertex, new_cost);
-
-            // TODO: it is no more than 100 presses for any given button, not total cost
             // Skip anything that costs over the maximum
-            // if new_cost > &100 {
-            //     return;
-            // }
+            if new_cost.0 > 100 || new_cost.1 > 100 {
+                return;
+            }
 
             let current_cost = distances.get(new_vertex);
 
@@ -141,7 +138,7 @@ fn process_input(input: &Input) -> Option<u32> {
 
             let current_cost = match current_cost {
                 Some(x) => x,
-                None => &0,
+                None => &(0, 0),
             };
 
             // Skip anything if it exceeds a maximum prize coordinates
