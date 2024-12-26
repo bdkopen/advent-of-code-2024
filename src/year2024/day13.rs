@@ -1,31 +1,9 @@
 use crate::util::file::read;
-use std::{
-    cmp::Ordering,
-    collections::{BinaryHeap, HashMap, HashSet},
-};
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd)]
 struct Vertex {
     x: u32,
     y: u32,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-struct Visit {
-    vertex: Vertex,
-    distance: (u32, u32), // (button a, button b)
-}
-
-// Create a custom ordering function so that the priority queue will reorder itself based on least expensive moves.
-impl Ord for Visit {
-    fn cmp(&self, other: &Self) -> Ordering {
-        (other.distance.0 * 3 + other.distance.1).cmp(&(&self.distance.0 * 3 + &self.distance.1))
-    }
-}
-impl PartialOrd for Visit {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
 }
 
 #[derive(Debug)]
@@ -71,105 +49,50 @@ fn process_file(filename: &str) -> Vec<Input> {
     return inputs;
 }
 
-fn process_input(input: &Input) -> Option<u32> {
-    let initial_vertex = Vertex { x: 0, y: 0 };
+const ROW_SIZE: usize = 2;
+const COL_SIZE: usize = 3;
 
-    let mut graph: HashMap<Vertex, Vec<Visit>> = HashMap::new();
+fn gaussian_elimination(input: &Input) -> Option<u32> {
+    let mut matrix: [[f32; COL_SIZE]; ROW_SIZE] = [
+        [input.a.x, input.b.x, input.prize.x].map(|v| v as f32),
+        [input.a.y, input.b.y, input.prize.y].map(|v| v as f32),
+    ];
 
-    // Use a HashMap to create a graph that stores adjacent paths and traversal cost
-    let mut distances: HashMap<Vertex, (u32, u32)> = HashMap::new();
-    distances.insert(initial_vertex, (0, 0));
-
-    // This HashSet allows us to track what vertexes we have already visited.
-    let mut visited = HashSet::new();
-
-    // This heap stores the locations that still need to be visited.
-    let mut to_visit_queue: BinaryHeap<Vertex> = BinaryHeap::new();
-    to_visit_queue.push(initial_vertex);
-
-    // Each iteration of this loop should analyze
-    while let Some(current_vertex) = to_visit_queue.pop() {
-        // Skip locations we've already visited.
-        if !visited.insert(current_vertex) {
-            continue;
+    // Set the values in the first column to be equal using the least common multiple.
+    let multiply_by = [matrix[1][0], matrix[0][0]];
+    for row in 0..ROW_SIZE {
+        for col in 0..COL_SIZE {
+            matrix[row][col] *= multiply_by[row];
         }
-
-        let token_cost = distances[&current_vertex];
-
-        // If we reached the desired prize location, return early.
-        if current_vertex == input.prize {
-            println!("{:?}", token_cost);
-            return Some(token_cost.0 * 3 + token_cost.1);
-        }
-
-        // Add the other locations to the graph and push onto the binary heap
-
-        let mut new_neighbors = vec![];
-
-        vec![
-            (
-                Vertex {
-                    x: current_vertex.x + input.a.x,
-                    y: current_vertex.y + input.a.y,
-                },
-                (token_cost.0 + 1, token_cost.1),
-            ),
-            (
-                Vertex {
-                    x: current_vertex.x + input.b.x,
-                    y: current_vertex.y + input.b.y,
-                },
-                (token_cost.0, token_cost.1 + 1),
-            ),
-        ]
-        .iter()
-        .for_each(|(new_vertex, new_cost)| {
-            // Skip anything that costs over the maximum
-            if new_cost.0 > 100 || new_cost.1 > 100 {
-                return;
-            }
-
-            let current_cost = distances.get(new_vertex);
-
-            // Skip any distances that cost more then an alternative path
-            if current_cost.is_some() && new_cost > current_cost.unwrap() {
-                return;
-            }
-
-            let current_cost = match current_cost {
-                Some(x) => x,
-                None => &(0, 0),
-            };
-
-            // Skip anything if it exceeds a maximum prize coordinates
-            if new_vertex.x > input.prize.x || new_vertex.y > input.prize.y {
-                return;
-            }
-
-            new_neighbors.push(Visit {
-                vertex: new_vertex.clone(),
-                distance: *current_cost,
-            });
-            distances.insert(new_vertex.clone(), *new_cost);
-
-            // How to reorder the heap?
-            to_visit_queue.push(*new_vertex);
-        });
-
-        graph.insert(current_vertex.clone(), new_neighbors);
     }
 
-    return None;
+    // R2 - R1 to put a 0 in the bottom left corner.
+    for col in 0..COL_SIZE {
+        matrix[1][col] -= matrix[0][col];
+    }
+
+    // Finally, use back substituion to determine the values of A and B.
+    let b = matrix[1][2] / matrix[1][1];
+    let a = (matrix[0][2] - matrix[0][1] * b) / matrix[0][0];
+
+    let cost = a * 3.0 + b;
+    // Return the cost if it's a whole number.
+    // If it's a fraction then there is no suitable integer result.
+    match cost.fract() {
+        0.0 => return Some(cost as u32),
+        _ => return None,
+    }
 }
 
 fn part1(inputs: Vec<Input>) -> u32 {
-    return inputs.iter().filter_map(|input| process_input(input)).sum();
+    return inputs
+        .iter()
+        .filter_map(|input| gaussian_elimination(input))
+        .sum();
 }
 
 pub fn run() {
     let inputs = process_file("input/year2024/day13.txt");
-
-    println!("{:?}", inputs);
 
     println!("{:?}", part1(inputs));
 }
