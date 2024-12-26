@@ -1,12 +1,12 @@
 use crate::util::file::read;
 
-fn process_line(input_string: &str) -> (f32, f32) {
+fn process_line(input_string: &str) -> (f64, f64) {
     // Grab ["X+DD", "Y+DD"]
     let mut movement_string = input_string.split(": ").last().unwrap().split(", ");
 
     return (
-        movement_string.next().unwrap()[2..].parse::<f32>().unwrap(),
-        movement_string.next().unwrap()[2..].parse::<f32>().unwrap(),
+        movement_string.next().unwrap()[2..].parse::<f64>().unwrap(),
+        movement_string.next().unwrap()[2..].parse::<f64>().unwrap(),
     );
 }
 
@@ -36,12 +36,12 @@ fn process_file(filename: &str) -> Vec<Matrix> {
     return matrixes;
 }
 
-type Matrix = [[f32; COL_SIZE]; ROW_SIZE];
-
+type Matrix = [[f64; COL_SIZE]; ROW_SIZE];
+//72a+20b = 10000000001284, 28a+52b = 10000000004264, c = a*3+b
 const ROW_SIZE: usize = 2;
 const COL_SIZE: usize = 3;
 
-fn gaussian_elimination(mut matrix: Matrix) -> Option<u32> {
+fn gaussian_elimination(mut matrix: Matrix) -> Option<u64> {
     // Set the values in the first column to be equal using the least common multiple.
     let multiply_by = [matrix[1][0], matrix[0][0]];
     for row in 0..ROW_SIZE {
@@ -60,23 +60,38 @@ fn gaussian_elimination(mut matrix: Matrix) -> Option<u32> {
     let a = (matrix[0][2] - matrix[0][1] * b) / matrix[0][0];
 
     let cost = a * 3.0 + b;
+
     // Return the cost if it's a whole number.
     // If it's a fraction then there is no suitable integer result.
     match cost.fract() {
-        0.0 => return Some(cost as u32),
+        0.0 => return Some(cost as u64),
         _ => return None,
     }
 }
 
-fn part1(matrixes: Vec<Matrix>) -> u32 {
+fn part1(matrixes: Vec<Matrix>) -> u64 {
     return matrixes
         .iter()
         .filter_map(|matrix| gaussian_elimination(*matrix))
         .sum();
 }
 
+fn part2(matrixes: Vec<Matrix>) -> u64 {
+    return matrixes
+        .iter()
+        .map(|matrix| {
+            matrix.map(|mut row| {
+                row[2] += 10000000000000.0;
+                return row;
+            })
+        })
+        .filter_map(|matrix| gaussian_elimination(matrix))
+        .sum();
+}
+
 pub fn run() {
     let inputs = process_file("input/year2024/day13.txt");
 
-    println!("{:?}", part1(inputs));
+    println!("Part 1: {:?}", part1(inputs.clone()));
+    println!("Part 2: {:?}", part2(inputs));
 }
