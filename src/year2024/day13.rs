@@ -1,32 +1,19 @@
 use crate::util::file::read;
 
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd)]
-struct Vertex {
-    x: u32,
-    y: u32,
-}
-
-#[derive(Debug)]
-struct Input {
-    a: Vertex,
-    b: Vertex,
-    prize: Vertex,
-}
-
-fn process_line(input_string: &str) -> Vertex {
+fn process_line(input_string: &str) -> (f32, f32) {
     // Grab ["X+DD", "Y+DD"]
     let mut movement_string = input_string.split(": ").last().unwrap().split(", ");
 
-    return Vertex {
-        x: movement_string.next().unwrap()[2..].parse::<u32>().unwrap(),
-        y: movement_string.next().unwrap()[2..].parse::<u32>().unwrap(),
-    };
+    return (
+        movement_string.next().unwrap()[2..].parse::<f32>().unwrap(),
+        movement_string.next().unwrap()[2..].parse::<f32>().unwrap(),
+    );
 }
 
-fn process_file(filename: &str) -> Vec<Input> {
+fn process_file(filename: &str) -> Vec<Matrix> {
     let mut input_iter = read(filename).unwrap().flatten();
 
-    let mut inputs = vec![];
+    let mut matrixes = vec![];
 
     loop {
         let input_a = input_iter.next();
@@ -36,28 +23,25 @@ fn process_file(filename: &str) -> Vec<Input> {
             break;
         }
 
-        inputs.push(Input {
-            a: process_line(&input_a.unwrap()),
-            b: process_line(&input_iter.next().unwrap()),
-            prize: process_line(&input_iter.next().unwrap()),
-        });
+        let a = process_line(&input_a.unwrap());
+        let b = process_line(&input_iter.next().unwrap());
+        let prize = process_line(&input_iter.next().unwrap());
+
+        matrixes.push([[a.0, b.0, prize.0], [a.1, b.1, prize.1]]);
 
         // Skip over the empty line
         input_iter.next();
     }
 
-    return inputs;
+    return matrixes;
 }
+
+type Matrix = [[f32; COL_SIZE]; ROW_SIZE];
 
 const ROW_SIZE: usize = 2;
 const COL_SIZE: usize = 3;
 
-fn gaussian_elimination(input: &Input) -> Option<u32> {
-    let mut matrix: [[f32; COL_SIZE]; ROW_SIZE] = [
-        [input.a.x, input.b.x, input.prize.x].map(|v| v as f32),
-        [input.a.y, input.b.y, input.prize.y].map(|v| v as f32),
-    ];
-
+fn gaussian_elimination(mut matrix: Matrix) -> Option<u32> {
     // Set the values in the first column to be equal using the least common multiple.
     let multiply_by = [matrix[1][0], matrix[0][0]];
     for row in 0..ROW_SIZE {
@@ -84,10 +68,10 @@ fn gaussian_elimination(input: &Input) -> Option<u32> {
     }
 }
 
-fn part1(inputs: Vec<Input>) -> u32 {
-    return inputs
+fn part1(matrixes: Vec<Matrix>) -> u32 {
+    return matrixes
         .iter()
-        .filter_map(|input| gaussian_elimination(input))
+        .filter_map(|matrix| gaussian_elimination(*matrix))
         .sum();
 }
 
