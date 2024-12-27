@@ -1,12 +1,12 @@
 use crate::util::file::read;
 
-fn process_line(input_string: &str) -> (f64, f64) {
+fn process_line(input_string: &str) -> (i64, i64) {
     // Grab ["X+DD", "Y+DD"]
     let mut movement_string = input_string.split(": ").last().unwrap().split(", ");
 
     return (
-        movement_string.next().unwrap()[2..].parse::<f64>().unwrap(),
-        movement_string.next().unwrap()[2..].parse::<f64>().unwrap(),
+        movement_string.next().unwrap()[2..].parse::<i64>().unwrap(),
+        movement_string.next().unwrap()[2..].parse::<i64>().unwrap(),
     );
 }
 
@@ -36,12 +36,11 @@ fn process_file(filename: &str) -> Vec<Matrix> {
     return matrixes;
 }
 
-type Matrix = [[f64; COL_SIZE]; ROW_SIZE];
-//72a+20b = 10000000001284, 28a+52b = 10000000004264, c = a*3+b
+type Matrix = [[i64; COL_SIZE]; ROW_SIZE];
 const ROW_SIZE: usize = 2;
 const COL_SIZE: usize = 3;
 
-fn gaussian_elimination(mut matrix: Matrix) -> Option<u64> {
+fn gaussian_elimination(mut matrix: Matrix) -> Option<i64> {
     // Set the values in the first column to be equal using the least common multiple.
     let multiply_by = [matrix[1][0], matrix[0][0]];
     for row in 0..ROW_SIZE {
@@ -56,32 +55,32 @@ fn gaussian_elimination(mut matrix: Matrix) -> Option<u64> {
     }
 
     // Finally, use back substituion to determine the values of A and B.
+    // If the values don't divide nicely, it means there is no solution to the system of equations.
+    if matrix[1][2] % matrix[1][1] != 0 {
+        return None;
+    }
     let b = matrix[1][2] / matrix[1][1];
+    if (matrix[0][2] - matrix[0][1] * b) % matrix[0][0] != 0 {
+        return None;
+    }
     let a = (matrix[0][2] - matrix[0][1] * b) / matrix[0][0];
 
-    let cost = a * 3.0 + b;
-
-    // Return the cost if it's a whole number.
-    // If it's a fraction then there is no suitable integer result.
-    match cost.fract() {
-        0.0 => return Some(cost as u64),
-        _ => return None,
-    }
+    return Some(a * 3 + b);
 }
 
-fn part1(matrixes: Vec<Matrix>) -> u64 {
+fn part1(matrixes: Vec<Matrix>) -> i64 {
     return matrixes
         .iter()
         .filter_map(|matrix| gaussian_elimination(*matrix))
         .sum();
 }
 
-fn part2(matrixes: Vec<Matrix>) -> u64 {
+fn part2(matrixes: Vec<Matrix>) -> i64 {
     return matrixes
         .iter()
         .map(|matrix| {
             matrix.map(|mut row| {
-                row[2] += 10000000000000.0;
+                row[2] += 10000000000000;
                 return row;
             })
         })
