@@ -20,3 +20,5 @@ I am using Advent of Code as a way to learn Rust. I attempt to use best practice
 | 9   | [Disk Fragmenter](https://adventofcode.com/2024/day/9) | [Source](src/year2024/day09.rs) |
 | 10  | [Hoof It](https://adventofcode.com/2024/day/10) | [Source](src/year2024/day10.rs) |
 | 11  | [Plutonian Pebbles](https://adventofcode.com/2024/day/11) | [Source](src/year2024/day11.rs) |
+| 12  | [Garden Groups](https://adventofcode.com/2024/day/12) | [Source](src/year2024/day12.rs) |
+| 13  | [Claw Contraption](https://adventofcode.com/2024/day/13) | [Source](src/year2024/day13.rs) |
