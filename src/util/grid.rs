@@ -1,5 +1,5 @@
 use crate::util::point::Point;
-use std::ops::Index;
+use std::ops::{Index, IndexMut};
 
 pub struct Grid<T> {
     pub col_count: usize,
@@ -27,6 +27,11 @@ impl<T> Index<Point> for Grid<T> {
     type Output = T;
 
     fn index(&self, point: Point) -> &Self::Output {
-        return &self.contents[self.col_count * point.x + point.y];
+        return &self.contents[self.col_count * point.y + point.x];
+    }
+}
+impl<T> IndexMut<Point> for Grid<T> {
+    fn index_mut(&mut self, point: Point) -> &mut Self::Output {
+        return &mut self.contents[self.col_count * point.y + point.x];
     }
 }
