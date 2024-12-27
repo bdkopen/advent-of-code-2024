@@ -21,17 +21,18 @@ fn process_file(filename: &str) -> Input {
         .collect();
 }
 
-fn quadrant_density(input: Input, seconds: i32) -> (i32, i32, i32, i32) {
+// Determine the density of robots per quadrant at a given second.
+fn quadrant_density(input: Input, second: i32) -> (i32, i32, i32, i32) {
     return input
         .into_iter()
         .map(|mut robot| {
             // Move the security robots through their total path.
-            robot.0 .0 += robot.1 .0 * seconds;
-            robot.0 .1 += robot.1 .1 * seconds;
+            robot.0 .0 += robot.1 .0 * second;
+            robot.0 .1 += robot.1 .1 * second;
             return robot;
         })
         .map(|mut robot| {
-            // Handle robots telporting to the other side when going out of bounds.
+            // Handle robots teleporting to the other side when going out of bounds.
             if robot.0 .0 < 0 {
                 robot.0 .0 += (-robot.0 .0 / WIDTH + 1) * (WIDTH);
             }
@@ -75,11 +76,13 @@ fn part1(input: Input) -> i32 {
 
 const THRESHOLD: i32 = 310;
 
+// Part 2 operates on the assumption that the christmas tree formed by the robot
+// locations can be found using the density of robots in quadrants.
 fn part2(input: Input) -> i32 {
     let mut seconds = 0;
     loop {
         let quadrants = quadrant_density(input.clone(), seconds);
-
+        // If any quadrant has a high density of robots, assume it's the Christmas tree.
         if quadrants.0 > THRESHOLD
             || quadrants.1 > THRESHOLD
             || quadrants.2 > THRESHOLD
