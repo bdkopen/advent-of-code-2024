@@ -21,17 +21,13 @@ fn process_file(filename: &str) -> Input {
         .collect();
 }
 
-const NUMBER_OF_SECONDS: i32 = 100;
-const WIDTH: i32 = 101;
-const HEIGHT: i32 = 103;
-
-fn part1(input: Input) -> i32 {
-    let quadrants = input
+fn quadrant_density(input: Input, seconds: i32) -> (i32, i32, i32, i32) {
+    return input
         .into_iter()
         .map(|mut robot| {
             // Move the security robots through their total path.
-            robot.0 .0 += robot.1 .0 * NUMBER_OF_SECONDS;
-            robot.0 .1 += robot.1 .1 * NUMBER_OF_SECONDS;
+            robot.0 .0 += robot.1 .0 * seconds;
+            robot.0 .1 += robot.1 .1 * seconds;
             return robot;
         })
         .map(|mut robot| {
@@ -66,12 +62,38 @@ fn part1(input: Input) -> i32 {
             }
             return quadrant;
         });
+}
 
+const NUMBER_OF_SECONDS: i32 = 100;
+const WIDTH: i32 = 101;
+const HEIGHT: i32 = 103;
+
+fn part1(input: Input) -> i32 {
+    let quadrants = quadrant_density(input, NUMBER_OF_SECONDS);
     return quadrants.0 * quadrants.1 * quadrants.2 * quadrants.3;
+}
+
+const THRESHOLD: i32 = 310;
+
+fn part2(input: Input) -> i32 {
+    let mut seconds = 0;
+    loop {
+        let quadrants = quadrant_density(input.clone(), seconds);
+
+        if quadrants.0 > THRESHOLD
+            || quadrants.1 > THRESHOLD
+            || quadrants.2 > THRESHOLD
+            || quadrants.3 > THRESHOLD
+        {
+            return seconds;
+        }
+        seconds += 1;
+    }
 }
 
 pub fn run() {
     let input = process_file("input/year2024/day14.txt");
 
-    println!("{:?}", part1(input))
+    println!("Part 1: {:?}", part1(input.clone()));
+    println!("Part 2: {:?}", part2(input));
 }
