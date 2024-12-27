@@ -25,7 +25,7 @@ fn check_plot(
     (row, col): (usize, usize),
 ) -> (u32, u32, u32) {
     // If the neighboring plot is a different plot, count this as a perimeter.
-    if garden[Point::new(row, col)] != expected_plot {
+    if garden[Point::new(col, row)] != expected_plot {
         return (1, 0, 0);
     }
 
@@ -128,7 +128,7 @@ fn part1(garden: Grid<char>) -> (u32, u32) {
             let (perimeter, area, sides) = check_plot(
                 &garden,
                 &mut visited_squares,
-                garden[Point::new(row, col)],
+                garden[Point::new(col, row)],
                 (row, col),
             );
 
