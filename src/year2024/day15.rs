@@ -2,7 +2,7 @@ use crate::util::{file::read, grid::Grid, point::Point};
 
 type Input = (Grid<char>, Vec<Direction>);
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum Direction {
     UP,
     DOWN,
@@ -99,8 +99,9 @@ fn part1((mut warehouse, instructions): Input) -> u32 {
     let mut count = 0;
     for row in 1..(warehouse.row_count - 1) {
         for col in 1..(warehouse.col_count - 1) {
-            if warehouse[Point::new(row, col)] == 'O' {
-                count += (col as u32) * 100 + (row as u32);
+            let value = warehouse[Point::new(col, row)];
+            if value == 'O' || value == '[' {
+                count += (row as u32) * 100 + (col as u32);
             }
         }
     }
@@ -109,7 +110,27 @@ fn part1((mut warehouse, instructions): Input) -> u32 {
 }
 
 pub fn run() {
-    let input = process_file("input/year2024/day15.txt");
+    let input_part1 = process_file("input/year2024/day15-test.txt");
+    // Create the input for part 2 which doubles the width of the warehouse.
+    let input_part2 = (
+        Grid {
+            row_count: input_part1.0.row_count,
+            col_count: input_part1.0.col_count * 2,
+            contents: input_part1
+                .0
+                .contents
+                .iter()
+                .flat_map(|char| match char {
+                    'O' => vec!['[', ']'],
+                    '@' => vec!['@', '.'],
+                    &value => vec![value, value],
+                })
+                .collect(),
+        },
+        input_part1.1.clone(),
+    );
 
-    println!("Part 1: {:?}", part1(input));
+    println!("Part 1: {:?}", part1(input_part1));
+
+    println!("Part 2: {:?}", part1(input_part2));
 }
