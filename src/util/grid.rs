@@ -1,5 +1,8 @@
 use crate::util::point::Point;
-use std::ops::{Index, IndexMut};
+use std::{
+    fmt,
+    ops::{Index, IndexMut},
+};
 
 #[derive(Debug)]
 pub struct Grid<T> {
@@ -8,7 +11,7 @@ pub struct Grid<T> {
     pub contents: Vec<T>,
 }
 
-impl<T> Grid<T> {
+impl<T: fmt::Display> Grid<T> {
     pub fn checked_get(&self, row: &Option<usize>, col: &Option<usize>) -> Option<&T> {
         if row.is_none() || col.is_none() {
             return None;
@@ -21,6 +24,17 @@ impl<T> Grid<T> {
             return None;
         }
         return self.contents.get(self.col_count * row + col);
+    }
+
+    pub fn print(&self) {
+        for row in 0..self.row_count {
+            for col in 0..self.col_count {
+                let point = Point::new(col, row);
+                print!("{}", self[point]);
+            }
+            println!();
+        }
+        println!();
     }
 
     pub fn find_index<P>(&self, mut predicate: P) -> Option<(usize, usize)>

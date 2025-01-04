@@ -1,3 +1,5 @@
+use std::collections::{HashSet, VecDeque};
+
 use crate::util::{file::read, grid::Grid, point::Point};
 
 type Input = (Grid<char>, Vec<Direction>);
@@ -45,55 +47,82 @@ fn process_file(filename: &str) -> Input {
     );
 }
 
-fn push_item(
-    warehouse: &mut Grid<char>,
-    (row, col): (usize, usize),
-    direction: Direction,
-) -> Option<(usize, usize)> {
-    let next_location = match direction {
+fn get_next_location((row, col): (usize, usize), direction: Direction) -> (usize, usize) {
+    return match direction {
         Direction::UP => (row - 1, col),
         Direction::DOWN => (row + 1, col),
         Direction::LEFT => (row, col - 1),
         Direction::RIGHT => (row, col + 1),
     };
-
-    let mut next_location_value = warehouse[Point::new(next_location.1, next_location.0)];
-
-    // If the next location is a wall, the item cannot be pushed.
-    if next_location_value == '#' {
-        return None;
-    }
-
-    // If the next location is a box, try to push the box.
-    if next_location_value == 'O' {
-        let result = push_item(warehouse, next_location, direction);
-
-        if result.is_none() {
-            return None;
-        }
-
-        // Update the location value because it would have changed.
-        next_location_value = warehouse[Point::new(next_location.1, next_location.0)];
-    }
-
-    warehouse[Point::new(next_location.1, next_location.0)] = warehouse[Point::new(col, row)];
-    warehouse[Point::new(col, row)] = next_location_value;
-
-    return Some(next_location);
 }
 
-fn part1((mut warehouse, instructions): Input) -> u32 {
+fn attempt_item_push(
+    warehouse: &mut Grid<char>,
+    (row, col): (usize, usize),
+    direction: Direction,
+) -> (usize, usize) {
+    let mut visited = HashSet::new();
+    let mut to_visit_queue = VecDeque::new();
+    let mut swap_list = VecDeque::new();
+
+    to_visit_queue.push_back(((row, col), true));
+
+    let is_vertical_shift = direction == Direction::UP || direction == Direction::DOWN;
+
+    // Perform a breadth first search to validate if the box can be pushed.
+    while let Some((location, check_adj)) = to_visit_queue.pop_front() {
+        // Skip locations we've already visited.
+        if !visited.insert(location) {
+            continue;
+        }
+
+        let next_location = get_next_location((location.0, location.1), direction);
+
+        let location_value = warehouse[Point::new(location.1, location.0)];
+        let next_location_value = warehouse[Point::new(next_location.1, next_location.0)];
+
+        // If a wall is hit, return the current location because no shifting occurs.
+        if next_location_value == '#' {
+            return (row, col);
+        }
+
+        // If a bos is found, check if the box can be pushed.
+        if next_location_value != '.' {
+            to_visit_queue.push_back((next_location, true));
+        }
+
+        swap_list.push_back((location, next_location));
+
+        if is_vertical_shift && check_adj {
+            if location_value == '[' {
+                let adj_location = (location.0, location.1 + 1);
+                to_visit_queue.push_back((adj_location, false));
+            } else if location_value == ']' {
+                let adj_location = (location.0, location.1 - 1);
+                to_visit_queue.push_back((adj_location, false));
+            }
+        }
+    }
+
+    // If the function doesn't return early, it means the boxes can successfully be pushed.
+    // Go through the swap list and move each box.
+    while let Some((location, next_location)) = swap_list.pop_back() {
+        let temp = warehouse[Point::new(location.1, location.0)];
+        warehouse[Point::new(location.1, location.0)] =
+            warehouse[Point::new(next_location.1, next_location.0)];
+        warehouse[Point::new(next_location.1, next_location.0)] = temp;
+    }
+
+    return get_next_location((row, col), direction);
+}
+
+fn get_final_gps_cord_sum((mut warehouse, instructions): Input) -> u32 {
     let mut current_location = warehouse
         .find_index(|char| char == &'@')
         .expect("Warehouse grid must contain a starting location");
 
     instructions.iter().for_each(|&direction| {
-        match push_item(&mut warehouse, current_location, direction) {
-            Some(location) => {
-                current_location = location;
-            }
-            None => (),
-        }
+        current_location = attempt_item_push(&mut warehouse, current_location, direction);
     });
 
     let mut count = 0;
@@ -110,7 +139,7 @@ fn part1((mut warehouse, instructions): Input) -> u32 {
 }
 
 pub fn run() {
-    let input_part1 = process_file("input/year2024/day15-test.txt");
+    let input_part1 = process_file("input/year2024/day15.txt");
     // Create the input for part 2 which doubles the width of the warehouse.
     let input_part2 = (
         Grid {
@@ -130,7 +159,7 @@ pub fn run() {
         input_part1.1.clone(),
     );
 
-    println!("Part 1: {:?}", part1(input_part1));
+    println!("Part 1: {:?}", get_final_gps_cord_sum(input_part1));
 
-    println!("Part 2: {:?}", part1(input_part2));
+    println!("Part 2: {:?}", get_final_gps_cord_sum(input_part2));
 }
