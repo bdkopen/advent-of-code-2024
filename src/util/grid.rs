@@ -1,5 +1,8 @@
 use crate::util::point::Point;
-use std::ops::{Index, IndexMut};
+use std::{
+    fmt,
+    ops::{Index, IndexMut},
+};
 
 pub struct Grid<T> {
     pub col_count: usize,
@@ -20,6 +23,38 @@ impl<T> Grid<T> {
             return None;
         }
         return self.contents.get(self.col_count * row + col);
+    }
+
+    pub fn find_index<P>(&self, mut predicate: P) -> Option<(usize, usize)>
+    where
+        P: FnMut(&T) -> bool,
+    {
+        let find_result = self
+            .contents
+            .iter()
+            .enumerate()
+            .find(move |(_index, value)| predicate(value));
+
+        match find_result {
+            None => None,
+            Some((index, _)) => {
+                let row = index / self.col_count;
+                Some((row, index - row * self.col_count))
+            }
+        }
+    }
+}
+
+impl<T: fmt::Display> Grid<T> {
+    pub fn print(&self) {
+        for row in 0..self.row_count {
+            for col in 0..self.col_count {
+                let point = Point::new(col, row);
+                print!("{}", self[point]);
+            }
+            println!();
+        }
+        println!();
     }
 }
 

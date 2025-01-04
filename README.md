@@ -23,3 +23,4 @@ I am using Advent of Code as a way to learn Rust. I attempt to use best practice
 | 12  | [Garden Groups](https://adventofcode.com/2024/day/12) | [Source](src/year2024/day12.rs) |
 | 13  | [Claw Contraption](https://adventofcode.com/2024/day/13) | [Source](src/year2024/day13.rs) |
 | 14  | [Restroom Redoubt](https://adventofcode.com/2024/day/14) | [Source](src/year2024/day14.rs) |
+| 15  | [Warehouse Woes](https://adventofcode.com/2024/day/15) | [Source](src/year2024/day15.rs) |
