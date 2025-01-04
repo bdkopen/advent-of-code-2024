@@ -65,12 +65,12 @@ fn attempt_item_push(
     let mut to_visit_queue = VecDeque::new();
     let mut swap_list = VecDeque::new();
 
-    to_visit_queue.push_back(((row, col), true));
+    to_visit_queue.push_back((row, col));
 
     let is_vertical_shift = direction == Direction::UP || direction == Direction::DOWN;
 
     // Perform a breadth first search to validate if the box can be pushed.
-    while let Some((location, check_adj)) = to_visit_queue.pop_front() {
+    while let Some(location) = to_visit_queue.pop_front() {
         // Skip locations we've already visited.
         if !visited.insert(location) {
             continue;
@@ -78,7 +78,6 @@ fn attempt_item_push(
 
         let next_location = get_next_location((location.0, location.1), direction);
 
-        let location_value = warehouse[Point::new(location.1, location.0)];
         let next_location_value = warehouse[Point::new(next_location.1, next_location.0)];
 
         // If a wall is hit, return the current location because no shifting occurs.
@@ -86,20 +85,21 @@ fn attempt_item_push(
             return (row, col);
         }
 
-        // If a bos is found, check if the box can be pushed.
+        // If a box is found, check if the box can be pushed.
         if next_location_value != '.' {
-            to_visit_queue.push_back((next_location, true));
+            to_visit_queue.push_back(next_location);
         }
 
         swap_list.push_back((location, next_location));
 
-        if is_vertical_shift && check_adj {
+        if is_vertical_shift {
+            let location_value = warehouse[Point::new(location.1, location.0)];
             if location_value == '[' {
                 let adj_location = (location.0, location.1 + 1);
-                to_visit_queue.push_back((adj_location, false));
+                to_visit_queue.push_back(adj_location);
             } else if location_value == ']' {
                 let adj_location = (location.0, location.1 - 1);
-                to_visit_queue.push_back((adj_location, false));
+                to_visit_queue.push_back(adj_location);
             }
         }
     }
