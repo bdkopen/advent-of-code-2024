@@ -4,14 +4,13 @@ use std::{
     ops::{Index, IndexMut},
 };
 
-#[derive(Debug)]
 pub struct Grid<T> {
     pub col_count: usize,
     pub row_count: usize,
     pub contents: Vec<T>,
 }
 
-impl<T: fmt::Display> Grid<T> {
+impl<T> Grid<T> {
     pub fn checked_get(&self, row: &Option<usize>, col: &Option<usize>) -> Option<&T> {
         if row.is_none() || col.is_none() {
             return None;
@@ -24,17 +23,6 @@ impl<T: fmt::Display> Grid<T> {
             return None;
         }
         return self.contents.get(self.col_count * row + col);
-    }
-
-    pub fn print(&self) {
-        for row in 0..self.row_count {
-            for col in 0..self.col_count {
-                let point = Point::new(col, row);
-                print!("{}", self[point]);
-            }
-            println!();
-        }
-        println!();
     }
 
     pub fn find_index<P>(&self, mut predicate: P) -> Option<(usize, usize)>
@@ -54,6 +42,19 @@ impl<T: fmt::Display> Grid<T> {
                 Some((row, index - row * self.col_count))
             }
         }
+    }
+}
+
+impl<T: fmt::Display> Grid<T> {
+    pub fn print(&self) {
+        for row in 0..self.row_count {
+            for col in 0..self.col_count {
+                let point = Point::new(col, row);
+                print!("{}", self[point]);
+            }
+            println!();
+        }
+        println!();
     }
 }
 
