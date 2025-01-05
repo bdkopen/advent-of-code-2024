@@ -79,13 +79,6 @@ fn get_adjacent_paths(maze: &Grid<char>, visit: Visit) -> Vec<Visit> {
         },
         Visit {
             location: Location {
-                vertex: get_next_location(visit.location.vertex, rotate_180),
-                direction: rotate_180,
-            },
-            distance: visit.distance + 2001,
-        },
-        Visit {
-            location: Location {
                 vertex: get_next_location(visit.location.vertex, rotate_270),
                 direction: rotate_270,
             },
@@ -119,9 +112,9 @@ fn process_file(filename: &str) -> Input {
 }
 
 // Use Dikjstra's algorithm to find the shortest route to complete the maze.
-fn part1((maze, direction, start_location, end_location): Input) -> u32 {
+fn part1((maze, direction, start_location, end_location): Input) -> (u32, usize) {
     let mut distances: HashMap<Location, u32> = HashMap::new();
-    let mut visited: HashSet<Location> = HashSet::new();
+    let mut visited: HashSet<(usize, usize)> = HashSet::new();
     let mut to_visit_queue: BinaryHeap<Visit> = BinaryHeap::new();
 
     to_visit_queue.push(Visit {
@@ -132,17 +125,23 @@ fn part1((maze, direction, start_location, end_location): Input) -> u32 {
         distance: 0,
     });
 
+    let mut children: HashMap<(usize, usize), Vec<(usize, usize)>> = HashMap::new();
+
+    let mut minimum_distance = None;
+
     while let Some(visit) = to_visit_queue.pop() {
         let current_location = visit.location;
         let current_distance = visit.distance;
 
-        if !visited.insert(current_location) {
+        if !visited.insert(current_location.vertex) {
             continue;
         }
 
         // If the end location is found, return early.
         if current_location.vertex == end_location {
-            return current_distance;
+            if minimum_distance == None {
+                minimum_distance = Some(current_distance);
+            }
         }
 
         get_adjacent_paths(&maze, visit)
@@ -155,16 +154,48 @@ fn part1((maze, direction, start_location, end_location): Input) -> u32 {
                     return;
                 }
 
+                // If the distance is greater than the already discovered minimum distance, skip the rest of the checks.
+                if minimum_distance.is_some() && Some(new_visit.distance) > minimum_distance {
+                    return;
+                }
+
                 distances.insert(new_visit.location, new_visit.distance);
                 to_visit_queue.push(new_visit);
+
+                children
+                    .entry(new_visit.location.vertex)
+                    .or_insert_with(Vec::new)
+                    .push(visit.location.vertex);
             });
     }
 
-    panic!("Maze does not have a valid path to the end location");
+    let mut unique_spaces = HashSet::new();
+    unique_spaces.insert(end_location);
+
+    let mut backtrace_queue = BinaryHeap::new();
+    backtrace_queue.push(end_location);
+
+    while let Some(location) = backtrace_queue.pop() {
+        if let Some(children_vec) = children.get(&location) {
+            println!("{:?}", children_vec);
+            for &child in children_vec {
+                if unique_spaces.insert(child) {
+                    backtrace_queue.push(child);
+                }
+            }
+        }
+    }
+
+    return (
+        minimum_distance.expect("Maze does not have a valid path to the end location"),
+        unique_spaces.len(),
+    );
 }
 
 pub fn run() {
     let input_part1 = process_file("input/year2024/day16.txt");
+
+    // part 2 - 585 too high!
 
     println!("Part 1: {:?}", part1(input_part1));
 }
