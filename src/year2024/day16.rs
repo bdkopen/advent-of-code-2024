@@ -72,17 +72,17 @@ fn get_adjacent_paths(maze: &Grid<char>, visit: Visit) -> Vec<Visit> {
         },
         Visit {
             location: Location {
-                vertex: get_next_location(visit.location.vertex, rotate_90),
+                vertex: visit.location.vertex,
                 direction: rotate_90,
             },
-            distance: visit.distance + 1001,
+            distance: visit.distance + 1000,
         },
         Visit {
             location: Location {
-                vertex: get_next_location(visit.location.vertex, rotate_270),
+                vertex: visit.location.vertex,
                 direction: rotate_270,
             },
-            distance: visit.distance + 1001,
+            distance: visit.distance + 1000,
         },
     ]
     .into_iter()
@@ -114,7 +114,7 @@ fn process_file(filename: &str) -> Input {
 // Use Dikjstra's algorithm to find the shortest route to complete the maze.
 fn part1((maze, direction, start_location, end_location): Input) -> (u32, usize) {
     let mut distances: HashMap<Location, u32> = HashMap::new();
-    let mut visited: HashSet<(usize, usize)> = HashSet::new();
+    let mut visited: HashSet<Location> = HashSet::new();
     let mut to_visit_queue: BinaryHeap<Visit> = BinaryHeap::new();
 
     to_visit_queue.push(Visit {
@@ -125,7 +125,8 @@ fn part1((maze, direction, start_location, end_location): Input) -> (u32, usize)
         distance: 0,
     });
 
-    let mut children: HashMap<(usize, usize), Vec<(usize, usize)>> = HashMap::new();
+    let mut children: HashMap<Location, Vec<Location>> = HashMap::new();
+    let mut end_locations: HashSet<Location> = HashSet::new();
 
     let mut minimum_distance = None;
 
@@ -133,7 +134,7 @@ fn part1((maze, direction, start_location, end_location): Input) -> (u32, usize)
         let current_location = visit.location;
         let current_distance = visit.distance;
 
-        if !visited.insert(current_location.vertex) {
+        if !visited.insert(current_location) {
             continue;
         }
 
@@ -142,15 +143,20 @@ fn part1((maze, direction, start_location, end_location): Input) -> (u32, usize)
             if minimum_distance == None {
                 minimum_distance = Some(current_distance);
             }
+            end_locations.insert(current_location);
+            continue;
         }
 
         get_adjacent_paths(&maze, visit)
             .into_iter()
             .for_each(|new_visit| {
-                let current_cost = distances.get(&new_visit.location);
+                let current_cost = match distances.get(&new_visit.location) {
+                    Some(cost) => cost,
+                    None => &u32::MAX,
+                };
 
                 // If the route is a higher cost, skip checking it.
-                if current_cost.is_some() && &new_visit.distance >= current_cost.unwrap() {
+                if &new_visit.distance > current_cost {
                     return;
                 }
 
@@ -163,27 +169,47 @@ fn part1((maze, direction, start_location, end_location): Input) -> (u32, usize)
                 to_visit_queue.push(new_visit);
 
                 children
-                    .entry(new_visit.location.vertex)
+                    .entry(new_visit.location)
                     .or_insert_with(Vec::new)
-                    .push(visit.location.vertex);
+                    .push(visit.location);
             });
     }
 
     let mut unique_spaces = HashSet::new();
     unique_spaces.insert(end_location);
 
-    let mut backtrace_queue = BinaryHeap::new();
-    backtrace_queue.push(end_location);
+    fn dfs(
+        current_location: Location,
+        end_location: &(usize, usize),
+        children: &HashMap<Location, Vec<Location>>,
+        current_path: &mut Vec<(usize, usize)>,
+        unique_spaces: &mut HashSet<(usize, usize)>,
+    ) {
+        let mut new_path = current_path.clone();
+        new_path.push(current_location.vertex);
 
-    while let Some(location) = backtrace_queue.pop() {
-        if let Some(children_vec) = children.get(&location) {
-            println!("{:?}", children_vec);
+        if &current_location.vertex == end_location {
+            for vertex in new_path {
+                unique_spaces.insert(vertex);
+            }
+            return;
+        }
+
+        if let Some(children_vec) = children.get(&current_location) {
             for &child in children_vec {
-                if unique_spaces.insert(child) {
-                    backtrace_queue.push(child);
-                }
+                dfs(child, end_location, children, &mut new_path, unique_spaces);
             }
         }
+    }
+
+    for end_location in end_locations {
+        dfs(
+            end_location,
+            &start_location,
+            &children,
+            &mut vec![end_location.vertex],
+            &mut unique_spaces,
+        );
     }
 
     return (
