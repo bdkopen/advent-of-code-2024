@@ -5,7 +5,9 @@ use std::{
 
 use crate::util::{file::read, grid::Grid, point::Point};
 
-type Input = (Grid<char>, Direction, (usize, usize), (usize, usize));
+type Vertex = (usize, usize);
+
+type Input = (Grid<char>, Direction, Vertex, Vertex);
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 enum Direction {
@@ -18,7 +20,7 @@ enum Direction {
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 struct Location {
     direction: Direction,
-    vertex: (usize, usize),
+    vertex: Vertex,
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
@@ -48,7 +50,7 @@ fn rotate_90_degrees(direction: Direction) -> Direction {
     }
 }
 
-fn get_next_location((row, col): (usize, usize), direction: Direction) -> (usize, usize) {
+fn get_next_location((row, col): Vertex, direction: Direction) -> Vertex {
     return match direction {
         Direction::UP => (row - 1, col),
         Direction::DOWN => (row + 1, col),
@@ -91,7 +93,10 @@ fn get_adjacent_paths(maze: &Grid<char>, visit: Visit) -> Vec<Visit> {
 }
 
 fn process_file(filename: &str) -> Input {
-    let input = read(filename).unwrap().flatten().collect::<Vec<String>>();
+    let input = read(filename)
+        .expect("File must have some contents")
+        .flatten()
+        .collect::<Vec<String>>();
 
     let maze = Grid {
         contents: input.iter().flat_map(|line| line.chars()).collect(),
@@ -112,14 +117,14 @@ fn process_file(filename: &str) -> Input {
 }
 
 // Use Dikjstra's algorithm to find the shortest route to complete the maze.
-fn solve((maze, direction, start_location, end_location): Input) -> (u32, usize) {
+fn solve((maze, direction, start_vertex, end_vertex): Input) -> (u32, usize) {
     let mut distances: HashMap<Location, u32> = HashMap::new();
     let mut visited: HashSet<Location> = HashSet::new();
     let mut to_visit_queue: BinaryHeap<Visit> = BinaryHeap::new();
 
     to_visit_queue.push(Visit {
         location: Location {
-            vertex: start_location,
+            vertex: start_vertex,
             direction: direction,
         },
         distance: 0,
@@ -141,7 +146,7 @@ fn solve((maze, direction, start_location, end_location): Input) -> (u32, usize)
         }
 
         // If the end location is found, return early.
-        if current_location.vertex == end_location {
+        if current_location.vertex == end_vertex {
             if minimum_distance == None {
                 minimum_distance = Some(current_distance);
             }
@@ -149,6 +154,7 @@ fn solve((maze, direction, start_location, end_location): Input) -> (u32, usize)
             continue;
         }
 
+        // Check the adjacent paths and add them to the priority queue, if necessary.
         get_adjacent_paths(&maze, visit)
             .into_iter()
             .for_each(|new_visit| {
@@ -186,10 +192,10 @@ fn solve((maze, direction, start_location, end_location): Input) -> (u32, usize)
     // We can use a DFS to determine the unique spaces that were visited.
     fn dfs(
         current_location: Location,
-        end_location: (usize, usize),
+        end_location: Vertex,
         children: &HashMap<Location, Vec<Location>>,
-        current_path: &mut Vec<(usize, usize)>,
-        unique_spaces: &mut HashSet<(usize, usize)>,
+        current_path: &mut Vec<Vertex>,
+        unique_spaces: &mut HashSet<Vertex>,
     ) {
         let mut new_path = current_path.clone();
         new_path.push(current_location.vertex);
@@ -208,12 +214,12 @@ fn solve((maze, direction, start_location, end_location): Input) -> (u32, usize)
         }
     }
 
-    let mut unique_spaces: HashSet<(usize, usize)> = HashSet::new();
+    let mut unique_spaces: HashSet<Vertex> = HashSet::new();
 
     for end_location in end_locations {
         dfs(
             end_location,
-            start_location,
+            start_vertex,
             &reversed_graph,
             &mut vec![],
             &mut unique_spaces,
