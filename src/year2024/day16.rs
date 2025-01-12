@@ -7,7 +7,7 @@ use crate::util::{file::read, grid::Grid, point::Point};
 
 type Input = (Grid<char>, Direction, (usize, usize), (usize, usize));
 
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 enum Direction {
     UP,
     DOWN,
@@ -27,7 +27,7 @@ struct Visit {
     distance: u32,
 }
 
-// Create a custom ordering function so that the priority queue will reorder itself based on least expensive moves.
+// Create a custom ordering function so that the BinaryHeap priority queue will reorder itself to prioritize the least expensive moves.
 impl Ord for Visit {
     fn cmp(&self, other: &Self) -> Ordering {
         (other.distance).cmp(&(&self.distance))
@@ -72,17 +72,17 @@ fn get_adjacent_paths(maze: &Grid<char>, visit: Visit) -> Vec<Visit> {
         },
         Visit {
             location: Location {
-                vertex: visit.location.vertex,
+                vertex: get_next_location(visit.location.vertex, rotate_90),
                 direction: rotate_90,
             },
-            distance: visit.distance + 1000,
+            distance: visit.distance + 1001,
         },
         Visit {
             location: Location {
-                vertex: visit.location.vertex,
+                vertex: get_next_location(visit.location.vertex, rotate_270),
                 direction: rotate_270,
             },
-            distance: visit.distance + 1000,
+            distance: visit.distance + 1001,
         },
     ]
     .into_iter()
@@ -112,7 +112,7 @@ fn process_file(filename: &str) -> Input {
 }
 
 // Use Dikjstra's algorithm to find the shortest route to complete the maze.
-fn part1((maze, direction, start_location, end_location): Input) -> (u32, usize) {
+fn solve((maze, direction, start_location, end_location): Input) -> (u32, usize) {
     let mut distances: HashMap<Location, u32> = HashMap::new();
     let mut visited: HashSet<Location> = HashSet::new();
     let mut to_visit_queue: BinaryHeap<Visit> = BinaryHeap::new();
@@ -125,11 +125,13 @@ fn part1((maze, direction, start_location, end_location): Input) -> (u32, usize)
         distance: 0,
     });
 
-    let mut children: HashMap<Location, Vec<Location>> = HashMap::new();
-    let mut end_locations: HashSet<Location> = HashSet::new();
-
     let mut minimum_distance = None;
 
+    // These variables are used later to determine the number of unique locations visited.
+    let mut reversed_graph: HashMap<Location, Vec<Location>> = HashMap::new();
+    let mut end_locations: HashSet<Location> = HashSet::new();
+
+    // Perform Dijkstra's algorithm to find the minimum distance and construct a reversed graph.
     while let Some(visit) = to_visit_queue.pop() {
         let current_location = visit.location;
         let current_distance = visit.distance;
@@ -152,6 +154,8 @@ fn part1((maze, direction, start_location, end_location): Input) -> (u32, usize)
             .for_each(|new_visit| {
                 let current_cost = match distances.get(&new_visit.location) {
                     Some(cost) => cost,
+                    // If there is no known distance, set the distance to MAX so our new distance
+                    // is always cheaper.
                     None => &u32::MAX,
                 };
 
@@ -168,19 +172,21 @@ fn part1((maze, direction, start_location, end_location): Input) -> (u32, usize)
                 distances.insert(new_visit.location, new_visit.distance);
                 to_visit_queue.push(new_visit);
 
-                children
+                // Create a reversed graph so we can traverse the tree in reverse later.
+                reversed_graph
                     .entry(new_visit.location)
                     .or_insert_with(Vec::new)
                     .push(visit.location);
             });
     }
 
-    let mut unique_spaces = HashSet::new();
-    unique_spaces.insert(end_location);
-
+    // As part of Dijkstra's algorithm previously, a reversed graph was constructed.
+    // If traversed, this graph will only include have full paths that are also
+    // the shortest paths.
+    // We can use a DFS to determine the unique spaces that were visited.
     fn dfs(
         current_location: Location,
-        end_location: &(usize, usize),
+        end_location: (usize, usize),
         children: &HashMap<Location, Vec<Location>>,
         current_path: &mut Vec<(usize, usize)>,
         unique_spaces: &mut HashSet<(usize, usize)>,
@@ -188,7 +194,7 @@ fn part1((maze, direction, start_location, end_location): Input) -> (u32, usize)
         let mut new_path = current_path.clone();
         new_path.push(current_location.vertex);
 
-        if &current_location.vertex == end_location {
+        if current_location.vertex == end_location {
             for vertex in new_path {
                 unique_spaces.insert(vertex);
             }
@@ -202,12 +208,14 @@ fn part1((maze, direction, start_location, end_location): Input) -> (u32, usize)
         }
     }
 
+    let mut unique_spaces: HashSet<(usize, usize)> = HashSet::new();
+
     for end_location in end_locations {
         dfs(
             end_location,
-            &start_location,
-            &children,
-            &mut vec![end_location.vertex],
+            start_location,
+            &reversed_graph,
+            &mut vec![],
             &mut unique_spaces,
         );
     }
@@ -219,9 +227,6 @@ fn part1((maze, direction, start_location, end_location): Input) -> (u32, usize)
 }
 
 pub fn run() {
-    let input_part1 = process_file("input/year2024/day16.txt");
-
-    // part 2 - 585 too high!
-
-    println!("Part 1: {:?}", part1(input_part1));
+    let input = process_file("input/year2024/day16.txt");
+    println!("{:?}", solve(input));
 }
