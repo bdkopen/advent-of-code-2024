@@ -108,10 +108,32 @@ fn part1((mut register_a, mut register_b, mut register_c, program): Input) -> St
         .join(",");
 }
 
+fn part2(program: Vec<u32>) -> u32 {
+    return program
+        .into_iter()
+        .rev()
+        .reduce(|acc, number| ((number + acc) * (2 * 2 * 2)))
+        .expect("There must be a final value.");
+}
+
 pub fn run() {
     let inputs = process_file("input/year2024/day17.txt");
+    let cloned_input = inputs.clone();
 
     println!("{:?}", inputs);
 
     println!("Part 1: {:?}", part1(inputs));
+
+    let part_2_result = part2(cloned_input.3.clone());
+
+    println!(
+        "Part 2: {:?} - {:?}",
+        part_2_result,
+        part1((
+            part_2_result,
+            cloned_input.1,
+            cloned_input.2,
+            cloned_input.3
+        ))
+    );
 }
