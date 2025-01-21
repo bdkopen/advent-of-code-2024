@@ -129,26 +129,48 @@ fn part1(input: Input) -> String {
 fn part2(mut program: Vec<u64>) -> u64 {
     println!("{:?}", program);
 
-    let program_rev = program.clone().into_iter().rev();
+    let program_rev: Vec<u64> = program.clone().into_iter().rev().collect();
     println!("{:?}", program_rev);
 
     program.pop();
     program.pop();
 
-    return program_rev.fold(0, |acc, number| {
-        let mut i = 0;
-        return loop {
-            let result: Vec<u64> = process_program((((acc << 3) + i), 0, 0, program.clone()));
+    let mut stack = vec![];
 
-            println!("{} = {} - {} - {}", result[0], number, acc, i);
+    let mut i = 0;
+    let mut stack_index = 0;
 
-            if result[0] == number {
-                println!("{}", ((acc << 3) + i));
-                break ((acc << 3) + i);
-            }
+    while stack_index < program_rev.len() {
+        if i > 7 {
+            stack_index -= 1;
+            stack[stack_index] += 1;
+            i = stack[stack_index];
+            stack.pop();
+            continue;
+        }
+        let number = program_rev[stack_index];
 
-            i += 1;
-        };
+        let acc = stack.iter().fold(0, |acc, value| {
+            return (acc << 3) + value;
+        });
+
+        let result: Vec<u64> = process_program((((acc << 3) + i), 0, 0, program.clone()));
+
+        println!("{} = {} - {:#b} - {:#b}", result[0], number, acc, i);
+
+        if result[0] == number {
+            println!("#{} -> {:#b}", number, ((acc << 3) + i));
+            stack.push(i);
+            i = 0;
+            stack_index += 1;
+            continue;
+        }
+
+        i += 1;
+    }
+
+    return stack.iter().fold(0, |acc, value| {
+        return (acc << 3) + value;
     });
 }
 
