@@ -1,13 +1,13 @@
 use crate::util::file::read;
 
-type Input = (u32, u32, u32, Vec<u32>);
+type Input = (u64, u64, u64, Vec<u64>);
 
 fn process_file(filename: &str) -> Input {
     let mut input_iter = read(filename).unwrap().flatten();
 
-    fn parse_register(input_number: &str) -> u32 {
+    fn parse_register(input_number: &str) -> u64 {
         input_number.split(": ").collect::<Vec<&str>>()[1]
-            .parse::<u32>()
+            .parse::<u64>()
             .expect("Input must have parsable number values.")
     }
 
@@ -23,45 +23,59 @@ fn process_file(filename: &str) -> Input {
         .collect::<Vec<&str>>()[1]
         .split(',')
         .map(|c| {
-            c.parse::<u32>()
+            c.parse::<u64>()
                 .expect("Input must have parsable number values.")
         })
-        .collect::<Vec<u32>>();
+        .collect::<Vec<u64>>();
 
     return (a, b, c, program);
 }
 
-const EXP_BASE: u32 = 2;
+fn combo_operand(
+    instruction: &u64,
+    operand: &u64,
+    register_a: &u64,
+    register_b: &u64,
+    register_c: &u64,
+) -> u64 {
+    return if instruction == &1 || instruction == &3 {
+        operand.clone()
+    } else {
+        match operand {
+            operand if operand <= &3 => operand.clone(),
+            4 => register_a.clone(),
+            5 => register_b.clone(),
+            6 => register_c.clone(),
+            7 => panic!("Combo operand 7 is reserved and should not appear in valid programs"),
+            _ => panic!("Combo operand is outside the 3-bit range"),
+        }
+    };
+}
 
-fn part1((mut register_a, mut register_b, mut register_c, program): Input) -> String {
+fn process_program((mut register_a, mut register_b, mut register_c, program): Input) -> Vec<u64> {
     let mut instruction_pointer: usize = 0;
-    let mut output: Vec<u32> = vec![];
+    let mut output: Vec<u64> = vec![];
 
     while let Some(instruction) = program.get(instruction_pointer) {
         let next_operand = program[instruction_pointer + 1];
 
-        let operand = if instruction == &1 || instruction == &3 {
-            next_operand
-        } else {
-            match next_operand {
-                operand if operand <= 3 => operand as u32,
-                4 => register_a,
-                5 => register_b,
-                6 => register_c,
-                7 => panic!("Combo operand 7 is reserved and should not appear in valid programs"),
-                _ => panic!("Combo operand is outside the 3-bit range"),
-            }
-        };
+        let operand = combo_operand(
+            instruction,
+            &next_operand,
+            &register_a,
+            &register_b,
+            &register_c,
+        );
 
         println!(
-            "A: {}, B: {}, C: {} - Instruction: {}, operand: {}",
+            "A: {:#b}, B: {}, C: {} - Instruction: {}, operand: {}",
             register_a, register_b, register_c, instruction, operand,
         );
 
         match instruction {
             0 => {
                 // adv A / 2^(combo)
-                register_a = register_a / (EXP_BASE.pow(operand));
+                register_a = register_a >> operand;
             }
             1 => {
                 //bxl - Bitwise XOR of register B and the literal operand
@@ -89,11 +103,11 @@ fn part1((mut register_a, mut register_b, mut register_c, program): Input) -> St
             }
             6 => {
                 // bdv - works like adv but with B register
-                register_b = register_a / (EXP_BASE.pow(operand));
+                register_b = register_a >> operand;
             }
             7 => {
                 // cdv - works like adv but with C register
-                register_c = register_a / (EXP_BASE.pow(operand));
+                register_c = register_a >> operand;
             }
             _ => panic!("Instruction found larger than 3-bit maximum"),
         };
@@ -101,23 +115,45 @@ fn part1((mut register_a, mut register_b, mut register_c, program): Input) -> St
         instruction_pointer += 2;
     }
 
-    return output
+    return output;
+}
+
+fn part1(input: Input) -> String {
+    return process_program(input)
         .iter()
         .map(|x| x.to_string())
         .collect::<Vec<String>>()
         .join(",");
 }
 
-fn part2(program: Vec<u32>) -> u32 {
-    return program
-        .into_iter()
-        .rev()
-        .reduce(|acc, number| ((number + acc) * (2 * 2 * 2)))
-        .expect("There must be a final value.");
+fn part2(mut program: Vec<u64>) -> u64 {
+    println!("{:?}", program);
+
+    let program_rev = program.clone().into_iter().rev();
+    println!("{:?}", program_rev);
+
+    program.pop();
+    program.pop();
+
+    return program_rev.fold(0, |acc, number| {
+        let mut i = 0;
+        return loop {
+            let result: Vec<u64> = process_program((((acc << 3) + i), 0, 0, program.clone()));
+
+            println!("{} = {} - {} - {}", result[0], number, acc, i);
+
+            if result[0] == number {
+                println!("{}", ((acc << 3) + i));
+                break ((acc << 3) + i);
+            }
+
+            i += 1;
+        };
+    });
 }
 
 pub fn run() {
-    let inputs = process_file("input/year2024/day17.txt");
+    let inputs = process_file("input/year2024/day17-part2.txt");
     let cloned_input = inputs.clone();
 
     println!("{:?}", inputs);
@@ -128,6 +164,7 @@ pub fn run() {
 
     println!(
         "Part 2: {:?} - {:?}",
+        // "Part 2: {:?} ",
         part_2_result,
         part1((
             part_2_result,
