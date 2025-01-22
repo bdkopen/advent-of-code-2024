@@ -1,8 +1,9 @@
 use crate::util::file::read;
 
-type Input = (u64, u64, u64, Vec<u64>);
+type Registers = (u64, u64, u64);
+type Program = Vec<u64>;
 
-fn process_file(filename: &str) -> Input {
+fn process_file(filename: &str) -> (Registers, Program) {
     let mut input_iter = read(filename).unwrap().flatten();
 
     fn parse_register(input_number: &str) -> u64 {
@@ -28,7 +29,7 @@ fn process_file(filename: &str) -> Input {
         })
         .collect::<Vec<u64>>();
 
-    return (a, b, c, program);
+    return ((a, b, c), program);
 }
 
 fn combo_operand(
@@ -52,7 +53,9 @@ fn combo_operand(
     };
 }
 
-fn process_program((mut register_a, mut register_b, mut register_c, program): Input) -> Vec<u64> {
+fn process_program(
+    ((mut register_a, mut register_b, mut register_c), program): (Registers, &Program),
+) -> Vec<u64> {
     let mut instruction_pointer: usize = 0;
     let mut output: Vec<u64> = vec![];
 
@@ -113,7 +116,7 @@ fn process_program((mut register_a, mut register_b, mut register_c, program): In
     return output;
 }
 
-fn part1(input: Input) -> String {
+fn part1(input: (Registers, &Program)) -> String {
     return process_program(input)
         .iter()
         .map(|x| x.to_string())
@@ -121,7 +124,7 @@ fn part1(input: Input) -> String {
         .join(",");
 }
 
-fn part2(mut program: Vec<u64>) -> u64 {
+fn part2(mut program: Program) -> u64 {
     let program_rev: Vec<u64> = program.clone().into_iter().rev().collect();
 
     program.pop();
@@ -133,6 +136,7 @@ fn part2(mut program: Vec<u64>) -> u64 {
     let mut stack_index = 0;
 
     while stack_index < program_rev.len() {
+        // If we've tried all options for the 3-bit number, undo the previous check to see if there are other valid options.
         if i > 7 {
             stack_index -= 1;
             stack[stack_index] += 1;
@@ -146,7 +150,7 @@ fn part2(mut program: Vec<u64>) -> u64 {
             return (acc << 3) + value;
         });
 
-        let result: Vec<u64> = process_program((((acc << 3) + i), 0, 0, program.clone()));
+        let result: Vec<u64> = process_program(((((acc << 3) + i), 0, 0), &program));
 
         if result[0] == number {
             stack.push(i);
@@ -165,11 +169,10 @@ fn part2(mut program: Vec<u64>) -> u64 {
 
 pub fn run() {
     let inputs = process_file("input/year2024/day17-part2.txt");
-    let cloned_input = inputs.clone();
 
-    println!("Part 1: {:?}", part1(inputs));
+    println!("Part 1: {:?}", part1((inputs.0, &inputs.1)));
 
-    let part_2_register_a = part2(cloned_input.3.clone());
+    let part_2_register_a = part2(inputs.1);
 
     println!("Part 2: {}", part_2_register_a);
 }
