@@ -32,27 +32,6 @@ fn process_file(filename: &str) -> (Registers, Program) {
     return ((a, b, c), program);
 }
 
-fn combo_operand(
-    instruction: &u64,
-    operand: &u64,
-    register_a: &u64,
-    register_b: &u64,
-    register_c: &u64,
-) -> u64 {
-    return if instruction == &1 || instruction == &3 {
-        operand.clone()
-    } else {
-        match operand {
-            operand if operand <= &3 => operand.clone(),
-            4 => register_a.clone(),
-            5 => register_b.clone(),
-            6 => register_c.clone(),
-            7 => panic!("Combo operand 7 is reserved and should not appear in valid programs"),
-            _ => panic!("Combo operand is outside the 3-bit range"),
-        }
-    };
-}
-
 fn process_program(
     ((mut register_a, mut register_b, mut register_c), program): (Registers, &Program),
 ) -> Vec<u64> {
@@ -62,17 +41,22 @@ fn process_program(
     while let Some(instruction) = program.get(instruction_pointer) {
         let next_operand = program[instruction_pointer + 1];
 
-        let operand = combo_operand(
-            instruction,
-            &next_operand,
-            &register_a,
-            &register_b,
-            &register_c,
-        );
+        let operand = if instruction == &1 || instruction == &3 {
+            next_operand
+        } else {
+            match next_operand {
+                operand if operand <= 3 => operand,
+                4 => register_a,
+                5 => register_b,
+                6 => register_c,
+                7 => panic!("Combo operand 7 is reserved and should not appear in valid programs"),
+                _ => panic!("Combo operand is outside the 3-bit range"),
+            }
+        };
 
         match instruction {
             0 => {
-                // adv A / 2^(combo)
+                // adv - A / 2^(combo)
                 register_a = register_a >> operand;
             }
             1 => {
@@ -127,6 +111,8 @@ fn part1(input: (Registers, &Program)) -> String {
 fn part2(mut program: Program) -> u64 {
     let program_rev: Vec<u64> = program.clone().into_iter().rev().collect();
 
+    // Pop off the instructions that loop to prevent running through the entire program
+    // when backtracing.
     program.pop();
     program.pop();
 
@@ -144,7 +130,6 @@ fn part2(mut program: Program) -> u64 {
             stack.pop();
             continue;
         }
-        let number = program_rev[stack_index];
 
         let acc = stack.iter().fold(0, |acc, value| {
             return (acc << 3) + value;
@@ -152,7 +137,10 @@ fn part2(mut program: Program) -> u64 {
 
         let result: Vec<u64> = process_program(((((acc << 3) + i), 0, 0), &program));
 
-        if result[0] == number {
+        let expected_number = program_rev[stack_index];
+
+        // If the returned number is the same as the expected program number, add it to the number stack.
+        if result[0] == expected_number {
             stack.push(i);
             i = 0;
             stack_index += 1;
@@ -168,7 +156,7 @@ fn part2(mut program: Program) -> u64 {
 }
 
 pub fn run() {
-    let inputs = process_file("input/year2024/day17-part2.txt");
+    let inputs = process_file("input/year2024/day17.txt");
 
     println!("Part 1: {:?}", part1((inputs.0, &inputs.1)));
 
