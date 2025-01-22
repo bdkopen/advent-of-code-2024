@@ -67,11 +67,6 @@ fn process_program((mut register_a, mut register_b, mut register_c, program): In
             &register_c,
         );
 
-        println!(
-            "A: {:#b}, B: {}, C: {} - Instruction: {}, operand: {}",
-            register_a, register_b, register_c, instruction, operand,
-        );
-
         match instruction {
             0 => {
                 // adv A / 2^(combo)
@@ -127,10 +122,7 @@ fn part1(input: Input) -> String {
 }
 
 fn part2(mut program: Vec<u64>) -> u64 {
-    println!("{:?}", program);
-
     let program_rev: Vec<u64> = program.clone().into_iter().rev().collect();
-    println!("{:?}", program_rev);
 
     program.pop();
     program.pop();
@@ -156,10 +148,7 @@ fn part2(mut program: Vec<u64>) -> u64 {
 
         let result: Vec<u64> = process_program((((acc << 3) + i), 0, 0, program.clone()));
 
-        println!("{} = {} - {:#b} - {:#b}", result[0], number, acc, i);
-
         if result[0] == number {
-            println!("#{} -> {:#b}", number, ((acc << 3) + i));
             stack.push(i);
             i = 0;
             stack_index += 1;
@@ -178,21 +167,9 @@ pub fn run() {
     let inputs = process_file("input/year2024/day17-part2.txt");
     let cloned_input = inputs.clone();
 
-    println!("{:?}", inputs);
-
     println!("Part 1: {:?}", part1(inputs));
 
-    let part_2_result = part2(cloned_input.3.clone());
+    let part_2_register_a = part2(cloned_input.3.clone());
 
-    println!(
-        "Part 2: {:?} - {:?}",
-        // "Part 2: {:?} ",
-        part_2_result,
-        part1((
-            part_2_result,
-            cloned_input.1,
-            cloned_input.2,
-            cloned_input.3
-        ))
-    );
+    println!("Part 2: {}", part_2_register_a);
 }
