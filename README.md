@@ -26,3 +26,4 @@ I am using Advent of Code as a way to learn Rust. I attempt to use best practice
 | 15  | [Warehouse Woes](https://adventofcode.com/2024/day/15) | [Source](src/year2024/day15.rs) |
 | 16  | [Reindeer Maze](https://adventofcode.com/2024/day/16) | [Source](src/year2024/day16.rs) |
 | 17  | [Chronospatial Computer](https://adventofcode.com/2024/day/17) | [Source](src/year2024/day17.rs) |
+| 18  | [RAM Run](https://adventofcode.com/2024/day/18) | [Source](src/year2024/day18.rs) |

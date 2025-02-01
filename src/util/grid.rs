@@ -4,6 +4,7 @@ use std::{
     ops::{Index, IndexMut},
 };
 
+#[derive(Clone)]
 pub struct Grid<T> {
     pub col_count: usize,
     pub row_count: usize,
