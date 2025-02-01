@@ -46,11 +46,8 @@ impl PartialOrd for Visit {
     }
 }
 
-fn bfs(
-    mut grid: Grid<char>,
-    bytes_locations: &Vec<(usize, usize)>,
-    fallen_bytes: usize,
-) -> Option<u32> {
+fn bfs(mut grid: Grid<char>, bytes_locations: &Vec<Location>, fallen_bytes: usize) -> Option<u32> {
+    // Apply the fallen bytes to the grid.
     for i in 0..fallen_bytes {
         let (x, y) = bytes_locations[i];
         grid[Point { x, y }] = '#';
@@ -111,7 +108,8 @@ fn bfs(
 }
 
 fn part1(grid: &Grid<char>, bytes_locations: &Vec<Location>) -> u32 {
-    return bfs(grid.clone(), bytes_locations, PART1_BYTE_COUNT).expect("Part 1 must have a value");
+    return bfs(grid.clone(), bytes_locations, PART1_BYTE_COUNT)
+        .expect("Part 1 must have a value.");
 }
 
 fn part2(grid: &Grid<char>, bytes_locations: &Vec<Location>) -> Location {
@@ -147,7 +145,6 @@ pub fn run() {
     };
 
     let part1_result = part1(&grid, &byte_locations);
-
     let part2_result = part2(&grid, &byte_locations);
 
     println!("Part 1: {}", part1_result);
