@@ -1,9 +1,9 @@
+use crate::util::{file::read, grid::Grid, point::Point};
 use std::{
     cmp::Ordering,
     collections::{BinaryHeap, HashSet},
 };
 
-use crate::util::{file::read, grid::Grid, point::Point};
 fn process_file(filename: &str) -> Vec<Location> {
     return read(filename)
         .unwrap()
@@ -46,7 +46,11 @@ impl PartialOrd for Visit {
     }
 }
 
-fn part1(mut grid: Grid<char>, fallen_bytes: usize, bytes_locations: Vec<(usize, usize)>) -> u32 {
+fn bfs(
+    mut grid: Grid<char>,
+    bytes_locations: &Vec<(usize, usize)>,
+    fallen_bytes: usize,
+) -> Option<u32> {
     for i in 0..fallen_bytes {
         let (x, y) = bytes_locations[i];
         grid[Point { x, y }] = '#';
@@ -64,8 +68,6 @@ fn part1(mut grid: Grid<char>, fallen_bytes: usize, bytes_locations: Vec<(usize,
     while let Some(visit) = to_visit_queue.pop() {
         let (x, y) = visit.location;
 
-        println!("{},{}", x, y);
-
         if grid[Point { x, y }] == '#' {
             continue;
         }
@@ -75,7 +77,7 @@ fn part1(mut grid: Grid<char>, fallen_bytes: usize, bytes_locations: Vec<(usize,
         }
 
         if visit.location == (WIDTH - 1, HEIGHT - 1) {
-            return visit.distance;
+            return Some(visit.distance);
         }
 
         let next_distance = visit.distance + 1;
@@ -105,7 +107,20 @@ fn part1(mut grid: Grid<char>, fallen_bytes: usize, bytes_locations: Vec<(usize,
         }
     }
 
-    return 1;
+    return None;
+}
+
+fn part1(grid: &Grid<char>, bytes_locations: &Vec<Location>) -> u32 {
+    return bfs(grid.clone(), bytes_locations, 1024).expect("Part 1 must have a value");
+}
+
+fn part2(grid: &Grid<char>, bytes_locations: &Vec<Location>) -> Location {
+    for i in 1024..bytes_locations.len() {
+        if bfs(grid.clone(), &bytes_locations, i) == None {
+            return bytes_locations[i - 1];
+        }
+    }
+    panic!("No value found");
 }
 
 const WIDTH: usize = 71;
@@ -120,9 +135,12 @@ pub fn run() {
         contents: vec!['.'; HEIGHT * WIDTH],
     };
 
-    let part1_result = part1(grid, 1024, byte_locations);
+    let part1_result = part1(&grid, &byte_locations);
+
+    let part2_result = part2(&grid, &byte_locations);
 
     println!("Part 1: {}", part1_result);
+    println!("Part 2: {:?}", part2_result);
 
     // let part_2_register_a = part2(inputs.1);
 
