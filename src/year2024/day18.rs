@@ -111,20 +111,31 @@ fn bfs(
 }
 
 fn part1(grid: &Grid<char>, bytes_locations: &Vec<Location>) -> u32 {
-    return bfs(grid.clone(), bytes_locations, 1024).expect("Part 1 must have a value");
+    return bfs(grid.clone(), bytes_locations, PART1_BYTE_COUNT).expect("Part 1 must have a value");
 }
 
 fn part2(grid: &Grid<char>, bytes_locations: &Vec<Location>) -> Location {
-    for i in 1024..bytes_locations.len() {
-        if bfs(grid.clone(), &bytes_locations, i) == None {
-            return bytes_locations[i - 1];
+    let mut lower = PART1_BYTE_COUNT;
+    let mut upper = bytes_locations.len();
+    loop {
+        let diff = upper - lower;
+        let i = lower + diff / 2;
+
+        // If this is the final index to check, we know it's the result.
+        if diff == 0 {
+            return bytes_locations[i];
         }
+
+        match bfs(grid.clone(), &bytes_locations, i) {
+            None => upper = i - 1,
+            Some(_) => lower = i + 1,
+        };
     }
-    panic!("No value found");
 }
 
 const WIDTH: usize = 71;
 const HEIGHT: usize = 71;
+const PART1_BYTE_COUNT: usize = 1024;
 
 pub fn run() {
     let byte_locations = process_file("input/year2024/day18.txt");
@@ -141,8 +152,4 @@ pub fn run() {
 
     println!("Part 1: {}", part1_result);
     println!("Part 2: {:?}", part2_result);
-
-    // let part_2_register_a = part2(inputs.1);
-
-    // println!("Part 2: {}", part_2_register_a);
 }
