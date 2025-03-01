@@ -1,8 +1,5 @@
 use crate::util::file::read;
-use std::{
-    cmp::Ordering,
-    collections::{BinaryHeap, HashMap},
-};
+use std::collections::HashMap;
 fn process_file(filename: &str) -> (Vec<String>, Vec<String>) {
     let mut input_iter = read(filename).unwrap().flatten();
 
@@ -21,32 +18,16 @@ fn process_file(filename: &str) -> (Vec<String>, Vec<String>) {
     return (towel_patterns, desired_patterns);
 }
 
-#[derive(Eq, PartialEq)]
-// The first string is the strand being navigated two and the second string is the previous strand.
-struct Strand(String, String);
-// Create a custom ordering function so that the BinaryHeap
-// priority queue will reorder itself to prioritize the least expensive moves.
-impl Ord for Strand {
-    fn cmp(&self, other: &Self) -> Ordering {
-        (other.0.len() + other.1.len()).cmp(&(self.0.len() + self.1.len()))
-    }
-}
-impl PartialOrd for Strand {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
 fn find_combinations(towel_patterns: Vec<String>, desired_patterns: Vec<String>) -> Vec<u64> {
     return desired_patterns
         .iter()
         .map(|pattern| {
             // Perform Dijkstra's algorithm to determine if the towel pattern can be made.
             let mut visited: HashMap<String, u64> = HashMap::new();
-            let mut queue: BinaryHeap<Strand> = BinaryHeap::new();
-            queue.push(Strand(String::new(), String::new()));
+            let mut queue: Vec<(String, String)> = Vec::new();
+            queue.push((String::new(), String::new()));
 
-            while let Some(Strand(towel, new_strand)) = queue.pop() {
+            while let Some((towel, new_strand)) = queue.pop() {
                 let towel_string = towel.clone();
                 let mut new_strand_string = towel_string.clone();
                 new_strand_string.push_str(&new_strand);
@@ -77,8 +58,13 @@ fn find_combinations(towel_patterns: Vec<String>, desired_patterns: Vec<String>)
 
                 // Add all the potential towel patterns to the queue.
                 for i in 0..towel_patterns.len() {
-                    queue.push(Strand(new_strand_string.clone(), towel_patterns[i].clone()));
+                    queue.push((new_strand_string.clone(), towel_patterns[i].clone()));
                 }
+
+                queue.sort_by(|pattern1, pattern2| {
+                    (pattern2.0.len() + pattern2.1.len())
+                        .cmp(&(&pattern1.0.len() + pattern1.1.len()))
+                });
             }
 
             return match visited.get(pattern) {
