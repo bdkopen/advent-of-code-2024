@@ -22,7 +22,6 @@ fn find_combinations(towel_patterns: Vec<String>, desired_patterns: Vec<String>)
     return desired_patterns
         .iter()
         .map(|pattern| {
-            // Perform Dijkstra's algorithm to determine if the towel pattern can be made.
             let mut visited: HashMap<String, u64> = HashMap::new();
             let mut queue: Vec<(String, String)> = Vec::new();
             queue.push((String::new(), String::new()));
