@@ -19,13 +19,13 @@ fn process_file(filename: &str) -> Grid<char> {
 #[derive(Debug, Clone, Copy)]
 struct Location {
     point: Point,
-    distance: u16,
+    distance: u32,
 }
 
 fn bfs(
     maze: &Grid<char>,
     start_location: Location,
-    remaining_distance_cache: &mut HashMap<Point, u16>,
+    remaining_distance_cache: &mut HashMap<Point, u32>,
 ) -> Vec<Location> {
     let mut visited: HashSet<Point> = HashSet::new();
     let mut queue: Vec<(Location, Vec<Location>)> = Vec::new();
@@ -102,8 +102,8 @@ fn bfs(
     return final_path;
 }
 
-fn part1(maze: &Grid<char>, time_save: u16) -> u16 {
-    let mut remaining_distance_cache: HashMap<Point, u16> = HashMap::new();
+fn part1(maze: &Grid<char>, time_save: u32) -> u32 {
+    let mut remaining_distance_cache: HashMap<Point, u32> = HashMap::new();
 
     // Perform a breadth first search to find the shortest. Along the way, record the path.
     let start = maze
@@ -178,11 +178,101 @@ fn part1(maze: &Grid<char>, time_save: u16) -> u16 {
     return count;
 }
 
+fn part2(maze: &Grid<char>, time_save: u32) -> u32 {
+    let mut remaining_distance_cache: HashMap<Point, u32> = HashMap::new();
+
+    // Perform a breadth first search to find the shortest. Along the way, record the path.
+    let start = maze
+        .find_index(|char| char == &'S')
+        .expect("Maze must have a start point.");
+
+    let start_location = Location {
+        point: Point::new(start.1, start.0),
+        distance: 0,
+    };
+
+    let bfs_path = bfs(maze, start_location, &mut remaining_distance_cache);
+    let bfs_distance = bfs_path[bfs_path.len() - 1].distance;
+
+    let mut count = 0;
+
+    // Get a count of all valid cheats.
+    for i in 0..bfs_path.len() {
+        let Location { point, distance } = bfs_path[i];
+
+        let mut cheat_visited: HashSet<(Option<usize>, Option<usize>)> = HashSet::new();
+
+        for x_offset in 0..21 {
+            for y_offset in 0..21 {
+                // There are no valid cheats with a distance over 20.
+                if x_offset + y_offset > 20 {
+                    continue;
+                }
+
+                [
+                    (
+                        (point.x).checked_sub(x_offset),
+                        (point.y).checked_sub(y_offset),
+                    ),
+                    (
+                        (point.x).checked_add(x_offset),
+                        (point.y).checked_add(y_offset),
+                    ),
+                    (
+                        (point.x).checked_sub(x_offset),
+                        (point.y).checked_add(y_offset),
+                    ),
+                    (
+                        (point.x).checked_add(x_offset),
+                        (point.y).checked_sub(y_offset),
+                    ),
+                ]
+                .iter()
+                .for_each(|(new_x, new_y)| {
+                    if !cheat_visited.insert((new_x.clone(), new_y.clone())) {
+                        return;
+                    }
+
+                    let value = maze.checked_get(&new_y, &new_x);
+
+                    if value != Some(&'E') && value != Some(&'.') {
+                        return;
+                    }
+
+                    let new_distance = distance + x_offset as u32 + y_offset as u32;
+
+                    let bfs_cheat_distance = bfs(
+                        maze,
+                        Location {
+                            point: Point {
+                                x: new_x.unwrap(),
+                                y: new_y.unwrap(),
+                            },
+                            distance: new_distance,
+                        },
+                        &mut remaining_distance_cache,
+                    )
+                    .pop()
+                    .expect("A valid path must be found")
+                    .distance;
+
+                    if bfs_distance - time_save >= bfs_cheat_distance {
+                        count = count + 1;
+                    }
+                })
+            }
+        }
+    }
+
+    return count;
+}
+
 pub fn run() {
     let maze = process_file("input/year2024/day20.txt");
 
     let part1_result = part1(&maze, 100);
+    let part2_result = part2(&maze, 100);
 
     println!("Part 1: {}", part1_result);
-    // println!("Part 2: {:?}", part2_result);
+    println!("Part 2: {}", part2_result);
 }
