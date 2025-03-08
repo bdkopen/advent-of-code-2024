@@ -102,18 +102,8 @@ fn bfs(
     return final_path;
 }
 
-fn part1(maze: &Grid<char>, time_save: u32) -> u32 {
+fn part1(maze: &Grid<char>, start_location: Location, time_save: u32) -> u32 {
     let mut remaining_distance_cache: HashMap<Point, u32> = HashMap::new();
-
-    // Perform a breadth first search to find the shortest. Along the way, record the path.
-    let start = maze
-        .find_index(|char| char == &'S')
-        .expect("Maze must have a start point.");
-
-    let start_location = Location {
-        point: Point::new(start.1, start.0),
-        distance: 0,
-    };
 
     let bfs_path = bfs(maze, start_location, &mut remaining_distance_cache);
     let bfs_distance = bfs_path[bfs_path.len() - 1].distance;
@@ -178,18 +168,8 @@ fn part1(maze: &Grid<char>, time_save: u32) -> u32 {
     return count;
 }
 
-fn part2(maze: &Grid<char>, time_save: u32) -> u32 {
+fn part2(maze: &Grid<char>, start_location: Location, time_save: u32) -> u32 {
     let mut remaining_distance_cache: HashMap<Point, u32> = HashMap::new();
-
-    // Perform a breadth first search to find the shortest. Along the way, record the path.
-    let start = maze
-        .find_index(|char| char == &'S')
-        .expect("Maze must have a start point.");
-
-    let start_location = Location {
-        point: Point::new(start.1, start.0),
-        distance: 0,
-    };
 
     let bfs_path = bfs(maze, start_location, &mut remaining_distance_cache);
     let bfs_distance = bfs_path[bfs_path.len() - 1].distance;
@@ -270,8 +250,17 @@ fn part2(maze: &Grid<char>, time_save: u32) -> u32 {
 pub fn run() {
     let maze = process_file("input/year2024/day20.txt");
 
-    let part1_result = part1(&maze, 100);
-    let part2_result = part2(&maze, 100);
+    let start = maze
+        .find_index(|char| char == &'S')
+        .expect("Maze must have a start point.");
+
+    let start_location = Location {
+        point: Point::new(start.1, start.0),
+        distance: 0,
+    };
+
+    let part1_result = part1(&maze, start_location, 100);
+    let part2_result = part2(&maze, start_location, 100);
 
     println!("Part 1: {}", part1_result);
     println!("Part 2: {}", part2_result);
