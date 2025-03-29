@@ -33,18 +33,23 @@ fn find_numeric_keypad_moves(input: &Vec<char>) -> Vec<char> {
             let current_row = index / 3;
             let current_col = index % 3;
 
-            if desired_row > current_row {
-                index += 3;
-                moves.push('^');
+            if desired_row > current_row && desired_col == 0 && current_row == 0 {
+                for _ in 0..(desired_row - current_row) {
+                    index += 3;
+                    moves.push('^');
+                }
             } else if desired_col > current_col {
                 index += 1;
                 moves.push('>');
-            } else if desired_row < current_row && index != 3 {
-                index -= 3;
-                moves.push('v');
             } else if desired_col < current_col && index != 1 {
                 index -= 1;
                 moves.push('<');
+            } else if desired_row > current_row {
+                index += 3;
+                moves.push('^');
+            } else if desired_row < current_row && index != 3 {
+                index -= 3;
+                moves.push('v');
             }
         }
         moves.push('A');
@@ -56,7 +61,7 @@ fn find_numeric_keypad_moves(input: &Vec<char>) -> Vec<char> {
 const DIRECTIONAL_KEYPAD: [char; 6] = ['<', 'v', '>', ' ', '^', 'A'];
 const DIRECTIONAL_KEYPAD_START_INDEX: usize = 5;
 
-fn find_directional_keypad_moves(input: &Vec<char>) -> Vec<char> {
+fn find_directional_keypad_moves(input: &Vec<char>, human_input: bool) -> Vec<char> {
     let directional_keypad_map: HashMap<char, usize> = HashMap::from_iter(
         DIRECTIONAL_KEYPAD
             .iter()
@@ -75,19 +80,37 @@ fn find_directional_keypad_moves(input: &Vec<char>) -> Vec<char> {
 
             let current_row = index / 3;
             let current_col = index % 3;
-
-            if desired_row < current_row {
-                index -= 3;
-                moves.push('v');
-            } else if desired_col > current_col {
-                index += 1;
-                moves.push('>');
-            } else if desired_col < current_col && index != 4 {
-                index -= 1;
-                moves.push('<');
-            } else if desired_row > current_row && index != 0 {
-                index += 3;
-                moves.push('^');
+            if human_input {
+                if desired_col < current_col && index != 4 {
+                    index -= 1;
+                    moves.push('<');
+                } else if desired_row < current_row {
+                    index -= 3;
+                    moves.push('v');
+                } else if desired_col > current_col {
+                    index += 1;
+                    moves.push('>');
+                } else if desired_row > current_row && index != 0 {
+                    index += 3;
+                    moves.push('^');
+                }
+            } else {
+                if desired_row < current_row && desired_col == 0 {
+                    index -= 3;
+                    moves.push('v');
+                } else if desired_col > current_col {
+                    index += 1;
+                    moves.push('>');
+                } else if desired_col < current_col && index != 4 {
+                    index -= 1;
+                    moves.push('<');
+                } else if desired_row > current_row && index != 0 {
+                    index += 3;
+                    moves.push('^');
+                } else if desired_row < current_row {
+                    index -= 3;
+                    moves.push('v');
+                }
             }
         }
         moves.push('A');
@@ -106,9 +129,10 @@ fn part1(inputs: &Vec<Vec<char>>) -> usize {
                 .parse::<usize>()
                 .expect("Input must have a 3 digit number");
 
-            let length = find_directional_keypad_moves(&find_directional_keypad_moves(
-                &find_numeric_keypad_moves(input),
-            ))
+            let length = find_directional_keypad_moves(
+                &find_directional_keypad_moves(&find_numeric_keypad_moves(input), false),
+                true,
+            )
             .len();
 
             return number * length;
@@ -149,7 +173,7 @@ fn part1(inputs: &Vec<Vec<char>>) -> usize {
                     .parse::<usize>()
                     .expect("Input must have a 3 digit number");
                 // return find_numeric_keypad_moves(input)
-                return (find_directional_keypad_moves(&find_numeric_keypad_moves(input)))
+                return (find_directional_keypad_moves(&find_numeric_keypad_moves(input), false))
                     .iter()
                     .collect::<String>();
             })
@@ -167,13 +191,37 @@ fn part1(inputs: &Vec<Vec<char>>) -> usize {
                     .parse::<usize>()
                     .expect("Input must have a 3 digit number");
                 // return find_numeric_keypad_moves(input)
-                return find_directional_keypad_moves(&find_directional_keypad_moves(
-                    &find_numeric_keypad_moves(input),
-                ))
+                return find_directional_keypad_moves(
+                    &find_directional_keypad_moves(&find_numeric_keypad_moves(input), false),
+                    true,
+                )
                 .iter()
                 .collect::<String>();
             })
             .collect::<Vec<String>>()
+    );
+    println!(
+        "{:?}",
+        inputs
+            .iter()
+            .map(|input| {
+                input[0..3]
+                    .iter()
+                    .collect::<String>()
+                    .parse::<usize>()
+                    .expect("Input must have a 3 digit number");
+                // return find_numeric_keypad_moves(input)
+                return find_directional_keypad_moves(
+                    &find_directional_keypad_moves(&find_numeric_keypad_moves(input), false),
+                    true,
+                )
+                .iter()
+                .collect::<String>();
+            })
+            .collect::<Vec<String>>()
+            .into_iter()
+            .map(|x| x.len())
+            .collect::<Vec<usize>>()
     );
 
     return required_movements;
