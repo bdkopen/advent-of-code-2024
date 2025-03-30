@@ -120,7 +120,7 @@ fn find_directional_keypad_moves(input: &Vec<char>, human_input: bool) -> Vec<ch
 }
 
 fn part1(inputs: &Vec<Vec<char>>) -> usize {
-    let required_movements = inputs
+    inputs
         .iter()
         .map(|input| {
             let number = input[0..3]
@@ -137,94 +137,7 @@ fn part1(inputs: &Vec<Vec<char>>) -> usize {
 
             return number * length;
         })
-        .sum();
-    // .collect::<Vec<Vec<char>>>();
-
-    println!(
-        "{:?}",
-        inputs
-            .iter()
-            .map(|input| {
-                input[0..3]
-                    .iter()
-                    .collect::<String>()
-                    .parse::<usize>()
-                    .expect("Input must have a 3 digit number");
-                // return find_numeric_keypad_moves(input)
-                // return find_directional_keypad_moves(&find_directional_keypad_moves(
-                // &
-                find_numeric_keypad_moves(input)
-                    //,
-                    // ))
-                    .iter()
-                    .collect::<String>()
-            })
-            .collect::<Vec<String>>()
-    );
-
-    println!(
-        "{:?}",
-        inputs
-            .iter()
-            .map(|input| {
-                input[0..3]
-                    .iter()
-                    .collect::<String>()
-                    .parse::<usize>()
-                    .expect("Input must have a 3 digit number");
-                // return find_numeric_keypad_moves(input)
-                return (find_directional_keypad_moves(&find_numeric_keypad_moves(input), false))
-                    .iter()
-                    .collect::<String>();
-            })
-            .collect::<Vec<String>>()
-    );
-
-    println!(
-        "{:?}",
-        inputs
-            .iter()
-            .map(|input| {
-                input[0..3]
-                    .iter()
-                    .collect::<String>()
-                    .parse::<usize>()
-                    .expect("Input must have a 3 digit number");
-                // return find_numeric_keypad_moves(input)
-                return find_directional_keypad_moves(
-                    &find_directional_keypad_moves(&find_numeric_keypad_moves(input), false),
-                    true,
-                )
-                .iter()
-                .collect::<String>();
-            })
-            .collect::<Vec<String>>()
-    );
-    println!(
-        "{:?}",
-        inputs
-            .iter()
-            .map(|input| {
-                input[0..3]
-                    .iter()
-                    .collect::<String>()
-                    .parse::<usize>()
-                    .expect("Input must have a 3 digit number");
-                // return find_numeric_keypad_moves(input)
-                return find_directional_keypad_moves(
-                    &find_directional_keypad_moves(&find_numeric_keypad_moves(input), false),
-                    true,
-                )
-                .iter()
-                .collect::<String>();
-            })
-            .collect::<Vec<String>>()
-            .into_iter()
-            .map(|x| x.len())
-            .collect::<Vec<usize>>()
-    );
-
-    return required_movements;
+        .sum()
 }
 
 pub fn run() {
