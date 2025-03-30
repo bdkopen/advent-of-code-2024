@@ -38,9 +38,6 @@ fn find_numeric_keypad_moves(input: &Vec<char>) -> Vec<char> {
                     index += 3;
                     moves.push('^');
                 }
-            } else if desired_col > current_col {
-                index += 1;
-                moves.push('>');
             } else if desired_col < current_col && index != 1 {
                 index -= 1;
                 moves.push('<');
@@ -50,6 +47,9 @@ fn find_numeric_keypad_moves(input: &Vec<char>) -> Vec<char> {
             } else if desired_row < current_row && index != 3 {
                 index -= 3;
                 moves.push('v');
+            } else if desired_col > current_col {
+                index += 1;
+                moves.push('>');
             }
         }
         moves.push('A');
@@ -228,7 +228,7 @@ fn part1(inputs: &Vec<Vec<char>>) -> usize {
 }
 
 pub fn run() {
-    let inputs = process_file("input/year2024/day21-test.txt");
+    let inputs = process_file("input/year2024/day21.txt");
 
     let part1_result = part1(&inputs);
 
