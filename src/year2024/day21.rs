@@ -1,19 +1,17 @@
 use crate::util::file::read;
 use std::collections::HashMap;
 
-fn process_file(filename: &str) -> Vec<Vec<char>> {
-    let input = read(filename)
+fn process_file(filename: &str) -> Vec<String> {
+    return read(filename)
         .expect("File must have some contents")
         .flatten()
         .collect::<Vec<String>>();
-
-    return input.iter().map(|line| line.chars().collect()).collect();
 }
 
 const NUMERIC_KEYPAD: [char; 12] = [' ', '0', 'A', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 const NUMERIC_KEYPAD_START_INDEX: usize = 2;
 
-fn find_numeric_keypad_moves(input: &Vec<char>) -> Vec<char> {
+fn find_numeric_keypad_moves(input: &str) -> Vec<String> {
     let numeric_keypad_map: HashMap<char, usize> = HashMap::from_iter(
         NUMERIC_KEYPAD
             .iter()
@@ -21,14 +19,15 @@ fn find_numeric_keypad_moves(input: &Vec<char>) -> Vec<char> {
             .map(|(index, &char)| (char, index)),
     );
 
-    let mut moves: Vec<char> = vec![];
+    let mut moves = vec![];
 
     let mut index = NUMERIC_KEYPAD_START_INDEX;
 
-    input.iter().for_each(|input_char| {
-        while &NUMERIC_KEYPAD[index] != input_char {
-            let desired_row = numeric_keypad_map[input_char] / 3;
-            let desired_col = numeric_keypad_map[input_char] % 3;
+    input.chars().for_each(|input_char| {
+        let mut intermediate = String::new();
+        while NUMERIC_KEYPAD[index] != input_char {
+            let desired_row = numeric_keypad_map[&input_char] / 3;
+            let desired_col = numeric_keypad_map[&input_char] % 3;
 
             let current_row = index / 3;
             let current_col = index % 3;
@@ -36,23 +35,24 @@ fn find_numeric_keypad_moves(input: &Vec<char>) -> Vec<char> {
             if desired_row > current_row && desired_col == 0 && current_row == 0 {
                 for _ in 0..(desired_row - current_row) {
                     index += 3;
-                    moves.push('^');
+                    intermediate.push('^');
                 }
             } else if desired_col < current_col && index != 1 {
                 index -= 1;
-                moves.push('<');
+                intermediate.push('<');
             } else if desired_row > current_row {
                 index += 3;
-                moves.push('^');
+                intermediate.push('^');
             } else if desired_row < current_row && index != 3 {
                 index -= 3;
-                moves.push('v');
+                intermediate.push('v');
             } else if desired_col > current_col {
                 index += 1;
-                moves.push('>');
+                intermediate.push('>');
             }
         }
-        moves.push('A');
+        intermediate.push('A');
+        moves.push(intermediate);
     });
 
     return moves;
@@ -61,7 +61,7 @@ fn find_numeric_keypad_moves(input: &Vec<char>) -> Vec<char> {
 const DIRECTIONAL_KEYPAD: [char; 6] = ['<', 'v', '>', ' ', '^', 'A'];
 const DIRECTIONAL_KEYPAD_START_INDEX: usize = 5;
 
-fn find_directional_keypad_moves(input: &Vec<char>, human_input: bool) -> Vec<char> {
+fn find_directional_keypad_moves(input: &str, human_input: bool) -> Vec<String> {
     let directional_keypad_map: HashMap<char, usize> = HashMap::from_iter(
         DIRECTIONAL_KEYPAD
             .iter()
@@ -69,82 +69,122 @@ fn find_directional_keypad_moves(input: &Vec<char>, human_input: bool) -> Vec<ch
             .map(|(index, &char)| (char, index)),
     );
 
-    let mut moves: Vec<char> = vec![];
+    let mut moves = vec![];
 
     let mut index = DIRECTIONAL_KEYPAD_START_INDEX;
 
-    input.iter().for_each(|input_char| {
-        while &DIRECTIONAL_KEYPAD[index] != input_char {
-            let desired_row = directional_keypad_map[input_char] / 3;
-            let desired_col = directional_keypad_map[input_char] % 3;
+    input.chars().for_each(|input_char| {
+        let mut intermediate = String::new();
+        while DIRECTIONAL_KEYPAD[index] != input_char {
+            let desired_row = directional_keypad_map[&input_char] / 3;
+            let desired_col = directional_keypad_map[&input_char] % 3;
 
             let current_row = index / 3;
             let current_col = index % 3;
             if human_input {
                 if desired_col < current_col && index != 4 {
                     index -= 1;
-                    moves.push('<');
+                    intermediate.push('<');
                 } else if desired_row < current_row {
                     index -= 3;
-                    moves.push('v');
+                    intermediate.push('v');
                 } else if desired_col > current_col {
                     index += 1;
-                    moves.push('>');
+                    intermediate.push('>');
                 } else if desired_row > current_row && index != 0 {
                     index += 3;
-                    moves.push('^');
+                    intermediate.push('^');
                 }
             } else {
                 if desired_row < current_row && desired_col == 0 {
                     index -= 3;
-                    moves.push('v');
+                    intermediate.push('v');
                 } else if desired_col > current_col {
                     index += 1;
-                    moves.push('>');
+                    intermediate.push('>');
                 } else if desired_col < current_col && index != 4 {
                     index -= 1;
-                    moves.push('<');
+                    intermediate.push('<');
                 } else if desired_row > current_row && index != 0 {
                     index += 3;
-                    moves.push('^');
+                    intermediate.push('^');
                 } else if desired_row < current_row {
                     index -= 3;
-                    moves.push('v');
+                    intermediate.push('v');
                 }
             }
         }
-        moves.push('A');
+        intermediate.push('A');
+        moves.push(intermediate);
     });
 
     return moves;
 }
 
-fn part1(inputs: &Vec<Vec<char>>) -> usize {
+fn calculate_sequence(inputs: &Vec<String>, directional_keypad_count: u8) -> usize {
+    let mut directional_keypad_cache: HashMap<String, Vec<String>> = HashMap::new();
+
     inputs
         .iter()
         .map(|input| {
             let number = input[0..3]
-                .iter()
-                .collect::<String>()
                 .parse::<usize>()
                 .expect("Input must have a 3 digit number");
 
-            let length = find_directional_keypad_moves(
-                &find_directional_keypad_moves(&find_numeric_keypad_moves(input), false),
-                true,
-            )
-            .len();
+            let numeric_keypad_sequence = find_numeric_keypad_moves(input);
 
-            return number * length;
+            let mut loop_index = 0;
+            let mut directional_keypad_sequence = numeric_keypad_sequence;
+            while loop_index < directional_keypad_count {
+                directional_keypad_sequence =
+                    directional_keypad_sequence
+                        .into_iter()
+                        .fold(vec![], |mut v, sub_sequence| {
+                            if let Some(value) = directional_keypad_cache.get(&sub_sequence) {
+                                v.extend(value.clone());
+                                return v;
+                            }
+                            let value = find_directional_keypad_moves(&sub_sequence, false);
+                            v.extend(value.clone());
+                            directional_keypad_cache.insert(sub_sequence, value);
+                            return v;
+                        });
+
+                loop_index += 1;
+            }
+
+            let human_keypad_sequence = directional_keypad_sequence
+                .into_iter()
+                .fold(vec![], |mut v, sub_sequence| {
+                    if let Some(value) = directional_keypad_cache.get(&sub_sequence) {
+                        v.extend(value.clone());
+                        return v;
+                    }
+                    let value = find_directional_keypad_moves(&sub_sequence, true);
+                    directional_keypad_cache.insert(sub_sequence, value.clone());
+                    v.extend(value.clone());
+                    return v;
+                })
+                .into_iter()
+                .fold(String::new(), |s, sequence| {
+                    return s + &sequence;
+                });
+
+            return number * human_keypad_sequence.len();
         })
         .sum()
 }
 
 pub fn run() {
-    let inputs = process_file("input/year2024/day21.txt");
-
-    let part1_result = part1(&inputs);
-
+    let inputs = process_file("input/year2024/day21-test.txt");
+    let part1_result = calculate_sequence(&inputs, 1);
     println!("Part 1: {}", part1_result);
-    // println!("Part 2: {}", part2_result);
+    let part2_result = calculate_sequence(&inputs, 18);
+    println!("Part 2: {}", part2_result);
+
+    let inputs = process_file("input/year2024/day21.txt");
+    let part1_result = calculate_sequence(&inputs, 1);
+    println!("Part 1: {}", part1_result);
+    let part2_result = calculate_sequence(&inputs, 10);
+    println!("Part 2: {}", part2_result);
 }
