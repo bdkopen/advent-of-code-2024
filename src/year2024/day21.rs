@@ -137,77 +137,68 @@ fn calculate_sequence(inputs: &Vec<String>, max_iteration: u8) -> usize {
                 .parse::<usize>()
                 .expect("Input must have a 3 digit number");
 
-            let mut index = NUMERIC_KEYPAD_START_INDEX;
-            let mut index2 = NUMERIC_KEYPAD_START_INDEX;
-            let mut shortest_length = 0;
+            let mut start_index = NUMERIC_KEYPAD_START_INDEX;
+            return input
+                .chars()
+                .map(|input_char| {
+                    let end_index = numeric_keypad_map[&input_char];
+                    let desired_row = end_index / 3;
+                    let desired_col = end_index % 3;
 
-            input.chars().for_each(|input_char| {
-                let desired_row = numeric_keypad_map[&input_char] / 3;
-                let desired_col = numeric_keypad_map[&input_char] % 3;
+                    // There are two possible optimal paths.
+                    // One prioritizes vertical movement and the other prioritizes horizontal.
+                    let result = [true, false]
+                        .iter()
+                        .map(|&prioritize_vertical| {
+                            let mut index = start_index;
 
-                let mut intermediate = String::new();
-                while NUMERIC_KEYPAD[index] != input_char {
-                    let current_row = index / 3;
-                    let current_col = index % 3;
+                            let mut intermediate = String::new();
+                            while NUMERIC_KEYPAD[index] != input_char {
+                                let current_row = index / 3;
+                                let current_col = index % 3;
 
-                    if desired_row > current_row && desired_col == 0 && current_row == 0 {
-                        for _ in 0..(desired_row - current_row) {
-                            index += 3;
-                            intermediate.push('^');
-                        }
-                    } else if desired_col < current_col && index != 1 {
-                        index -= 1;
-                        intermediate.push('<');
-                    } else if desired_row > current_row {
-                        index += 3;
-                        intermediate.push('^');
-                    } else if desired_row < current_row && index != 3 {
-                        index -= 3;
-                        intermediate.push('v');
-                    } else if desired_col > current_col {
-                        index += 1;
-                        intermediate.push('>');
-                    }
-                }
-                intermediate.push('A');
-                let length: usize = find_directional_keypad_moves(
-                    &intermediate,
-                    0,
-                    max_iteration,
-                    &mut directional_keypad_cache,
-                );
+                                let move_left = desired_col < current_col && index != 1;
+                                let move_right = desired_col > current_col;
 
-                let mut intermediate = String::new();
-                while NUMERIC_KEYPAD[index2] != input_char {
-                    let current_row = index2 / 3;
-                    let current_col = index2 % 3;
+                                let priority = prioritize_vertical
+                                    || (!prioritize_vertical && !move_left && !move_right);
 
-                    if desired_col > current_col {
-                        index2 += 1;
-                        intermediate.push('>');
-                    } else if desired_col < current_col && index2 != 1 {
-                        index2 -= 1;
-                        intermediate.push('<');
-                    } else if desired_row > current_row {
-                        index2 += 3;
-                        intermediate.push('^');
-                    } else if desired_row < current_row && index2 != 3 {
-                        index2 -= 3;
-                        intermediate.push('v');
-                    }
-                }
-                intermediate.push('A');
-                let length2: usize = find_directional_keypad_moves(
-                    &intermediate,
-                    0,
-                    max_iteration,
-                    &mut directional_keypad_cache,
-                );
+                                if desired_row > current_row && priority {
+                                    index += 3;
+                                    intermediate.push('^');
+                                } else if desired_row < current_row && index != 3 && priority {
+                                    index -= 3;
+                                    intermediate.push('v');
+                                } else if move_left {
+                                    index -= 1;
+                                    intermediate.push('<');
+                                } else if move_right {
+                                    index += 1;
+                                    intermediate.push('>');
+                                }
+                            }
 
-                shortest_length += *[length, length2].iter().min().unwrap();
-            });
+                            if !prioritize_vertical {
+                                start_index = index;
+                            }
 
-            return number * shortest_length;
+                            intermediate.push('A');
+                            return find_directional_keypad_moves(
+                                &intermediate,
+                                0,
+                                max_iteration,
+                                &mut directional_keypad_cache,
+                            );
+                        })
+                        .min()
+                        .unwrap();
+
+                    start_index = end_index;
+
+                    return result;
+                })
+                .sum::<usize>()
+                * number;
         })
         .sum()
 }
