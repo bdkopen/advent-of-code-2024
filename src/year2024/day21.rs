@@ -42,71 +42,60 @@ fn find_directional_keypad_moves(
             .map(|(index, &char)| (char, index)),
     );
 
-    let mut index = DIRECTIONAL_KEYPAD_START_INDEX;
-    let mut index2 = DIRECTIONAL_KEYPAD_START_INDEX;
     let mut shortest_length = 0;
 
-    // Find the shortest route recurisvely by checking two different direction combinations.
-    // One direction prioritizes vertical movement and the other horizontal.
+    let mut start_index = DIRECTIONAL_KEYPAD_START_INDEX;
+
     input.chars().for_each(|input_char| {
+        let end_index = directional_keypad_map[&input_char];
         let desired_row = directional_keypad_map[&input_char] / 3;
         let desired_col = directional_keypad_map[&input_char] % 3;
 
-        let mut intermediate = String::new();
-        while DIRECTIONAL_KEYPAD[index] != input_char {
-            let current_row = index / 3;
-            let current_col = index % 3;
-            if desired_row < current_row {
-                index -= 3;
-                intermediate.push('v');
-            } else if desired_col > current_col {
-                index += 1;
-                intermediate.push('>');
-            } else if desired_row > current_row && index != 0 {
-                index += 3;
-                intermediate.push('^');
-            } else if desired_col < current_col && index != 4 {
-                index -= 1;
-                intermediate.push('<');
-            }
-        }
-        intermediate.push('A');
+        // There are two possible optimal paths.
+        // One prioritizes vertical movement and the other prioritizes horizontal.
+        shortest_length += [true, false]
+            .iter()
+            .map(|&prioritize_vertical| {
+                let mut index = start_index;
 
-        let length = find_directional_keypad_moves(
-            &intermediate,
-            iteration + 1,
-            max_iteration,
-            directional_keypad_cache,
-        );
+                let mut intermediate = String::new();
+                while DIRECTIONAL_KEYPAD[index] != input_char {
+                    let current_row = index / 3;
+                    let current_col = index % 3;
 
-        let mut intermediate = String::new();
-        while DIRECTIONAL_KEYPAD[index2] != input_char {
-            let current_row = index2 / 3;
-            let current_col = index2 % 3;
-            if desired_col < current_col && index2 != 4 {
-                index2 -= 1;
-                intermediate.push('<');
-            } else if desired_row < current_row {
-                index2 -= 3;
-                intermediate.push('v');
-            } else if desired_row > current_row && index2 != 0 {
-                index2 += 3;
-                intermediate.push('^');
-            } else if desired_col > current_col {
-                index2 += 1;
-                intermediate.push('>');
-            }
-        }
-        intermediate.push('A');
+                    let move_right = desired_col > current_col;
+                    let move_left = desired_col < current_col && index != 4;
 
-        let length2 = find_directional_keypad_moves(
-            &intermediate,
-            iteration + 1,
-            max_iteration,
-            directional_keypad_cache,
-        );
+                    let priority =
+                        prioritize_vertical || (!prioritize_vertical && !move_right && !move_left);
 
-        shortest_length += *[length, length2].iter().min().unwrap();
+                    if desired_row < current_row && priority {
+                        index -= 3;
+                        intermediate.push('v');
+                    } else if desired_row > current_row && index != 0 && priority {
+                        index += 3;
+                        intermediate.push('^');
+                    } else if move_left {
+                        index -= 1;
+                        intermediate.push('<');
+                    } else if move_right {
+                        index += 1;
+                        intermediate.push('>');
+                    }
+                }
+                intermediate.push('A');
+
+                return find_directional_keypad_moves(
+                    &intermediate,
+                    iteration + 1,
+                    max_iteration,
+                    directional_keypad_cache,
+                );
+            })
+            .min()
+            .unwrap();
+
+        start_index = end_index;
     });
 
     directional_keypad_cache.insert(computed_sequence, shortest_length);
