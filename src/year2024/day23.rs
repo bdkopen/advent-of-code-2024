@@ -47,13 +47,10 @@ fn part1(input: Input) -> usize {
         // If a computer connects to less then 2 other computers, don't continue searching.
         // We are searching for computers that are the hub between two computers.
         .filter(|(_, values)| {
-            println!("{}", values.len());
             return values.len() > 3;
         })
         // Determine if any of the computer
         .for_each(|(key, value_set)| {
-            // let mut pairs = HashSet::new();
-
             for key2 in value_set.into_iter() {
                 if let Some(set2) = input.get(key2) {
                     for key3 in set2.into_iter() {
@@ -74,12 +71,80 @@ fn part1(input: Input) -> usize {
     return pairs.len();
 }
 
+fn part2(input: Input) -> String {
+    fn recursive_search(
+        current_set: &mut HashSet<String>,
+        potential_group_connections: &mut HashSet<String>,
+        input: &Input,
+    ) -> HashSet<String> {
+        let mut set: HashSet<String> = current_set.clone();
+
+        'outer: for key in potential_group_connections.clone().iter() {
+            // if every key in current_set doesn't connect to key, skip this set.
+            // else add the key and recursively try the next. Make sure to remove key from potential_group_connections.
+            let key_set = input.get(key).unwrap();
+
+            for pair_key in current_set.iter() {
+                if key_set.get(pair_key).is_none() {
+                    potential_group_connections.remove(key);
+                    continue 'outer;
+                }
+            }
+
+            let mut new_current_set = current_set.clone();
+            new_current_set.insert(key.to_string());
+
+            let result = recursive_search(&mut new_current_set, potential_group_connections, input);
+
+            if result.len() > set.len() {
+                set = result;
+            }
+        }
+
+        return set;
+    }
+
+    // Start the search on every key.
+    let values: Vec<HashSet<String>> = input
+        .iter()
+        .map(|(key, value_set)| {
+            // Rules:
+            // - the LAN party cannot be bigger then the smallest set in the group
+            let mut current_set: HashSet<String> = HashSet::new();
+            current_set.insert(key.to_string());
+
+            return recursive_search(&mut current_set, &mut value_set.clone(), &input);
+        })
+        .collect();
+
+    let mut largest_set = values
+        .iter()
+        .max_by_key(|s| s.len())
+        .unwrap()
+        .iter()
+        .map(|key| key)
+        .collect::<Vec<&String>>();
+
+    largest_set.sort();
+
+    let output = largest_set.into_iter().fold(String::new(), |acc, value| {
+        if acc == "" {
+            return String::new() + value;
+        }
+
+        return acc + "," + &value;
+    });
+
+    println!("{:?}", output);
+
+    return output;
+}
+
 pub fn run() {
     let input = process_file("input/year2024/day23.txt");
-    let part1_result = part1(input);
-
-    // println!("{:?}", input);
+    let part1_result = part1(input.clone());
+    let part2_result = part2(input);
 
     println!("{}", part1_result);
-    // println!("{}", part2_result);
+    println!("{}", part2_result);
 }
