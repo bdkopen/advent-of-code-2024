@@ -1,7 +1,7 @@
 use crate::util::file::read;
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum Gate {
     AND,
     OR,
@@ -31,8 +31,6 @@ fn process_file(filename: &str) -> Input {
         .find(|(_, line)| line == &"")
         .unwrap()
         .0;
-
-    println!("{:?}", input_split_index);
 
     let mut wire_values: HashMap<String, Option<u8>> = HashMap::new();
 
@@ -88,14 +86,87 @@ fn process_file(filename: &str) -> Input {
     };
 }
 
+fn part1(
+    Input {
+        mut wire_values,
+        mut logic_gates,
+    }: Input,
+) -> u64 {
+    // Loop while there are unprocessed logic gates.
+    while logic_gates.len() > 0 {
+        for index in 0..logic_gates.len() {
+            let logic_gate = &logic_gates[index];
+
+            let input0 = wire_values[&logic_gate.input0];
+            let input1 = wire_values[&logic_gate.input1];
+
+            // If a wire value is missing, it cannot be calculated yet.
+            if input0.is_none() || input1.is_none() {
+                continue;
+            }
+
+            let gate = logic_gate.gate;
+
+            if gate == Gate::AND {
+                if input0 == Some(1) && input1 == Some(1) {
+                    wire_values.insert(logic_gate.output.clone(), Some(1));
+                } else {
+                    wire_values.insert(logic_gate.output.clone(), Some(0));
+                }
+            } else if gate == Gate::OR {
+                if input0 == Some(1) || input1 == Some(1) {
+                    wire_values.insert(logic_gate.output.clone(), Some(1));
+                } else {
+                    wire_values.insert(logic_gate.output.clone(), Some(0));
+                }
+            } else if gate == Gate::XOR {
+                if (input0 == Some(1) && input1 == Some(0))
+                    || (input0 == Some(0) && input1 == Some(1))
+                {
+                    wire_values.insert(logic_gate.output.clone(), Some(1));
+                } else {
+                    wire_values.insert(logic_gate.output.clone(), Some(0));
+                }
+            }
+
+            logic_gates.remove(index);
+            break;
+        }
+    }
+
+    let mut output_wire_names = wire_values
+        .iter()
+        .filter_map(|(wire_name, _)| {
+            if wire_name.chars().collect::<Vec<char>>()[0] == 'z' {
+                return Some(wire_name);
+            }
+            return None;
+        })
+        .collect::<Vec<&String>>();
+
+    output_wire_names.sort();
+
+    let output = output_wire_names
+        .into_iter()
+        .fold(String::new(), |output, value| {
+            return String::from(
+                wire_values[value]
+                    .expect("The wire must have a value at the end of the processing.")
+                    .to_string(),
+            ) + &output;
+        });
+
+    return u64::from_str_radix(&output, 2).expect("Output must be in a valid binary format.");
+}
+
 pub fn run() {
-    let input = process_file("input/year2024/day24-test.txt");
+    let input = process_file("input/year2024/day24.txt");
 
     println!("{:?}", input);
 
-    // let part1_result = part1(input.clone());
+    let part1_result = part1(input);
     // let part2_result = part2(input);
 
-    // println!("{}", part1_result);
+    println!("{:?}", part1_result);
     // println!("{}", part2_result);
 }
