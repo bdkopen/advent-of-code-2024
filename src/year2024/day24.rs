@@ -140,7 +140,7 @@ fn calculate_wires(
     return Some(wire_values);
 }
 
-fn wire_to_decimal(wire_values: &WireValues, wire_start_char: char) -> u64 {
+fn wire_to_binary(wire_values: &WireValues, wire_start_char: char) -> String {
     let mut output_wire_names = wire_values
         .iter()
         .filter_map(|(wire_name, _)| {
@@ -153,7 +153,7 @@ fn wire_to_decimal(wire_values: &WireValues, wire_start_char: char) -> u64 {
 
     output_wire_names.sort();
 
-    let output = output_wire_names
+    return output_wire_names
         .into_iter()
         .fold(String::new(), |output, value| {
             return String::from(
@@ -162,8 +162,11 @@ fn wire_to_decimal(wire_values: &WireValues, wire_start_char: char) -> u64 {
                     .to_string(),
             ) + &output;
         });
+}
 
-    return u64::from_str_radix(&output, 2).expect("Output must be in a valid binary format.");
+fn wire_to_decimal(wire_values: &WireValues, wire_start_char: char) -> u64 {
+    return u64::from_str_radix(&wire_to_binary(&wire_values, wire_start_char), 2)
+        .expect("Output must be in a valid binary format.");
 }
 
 fn part1(
@@ -201,27 +204,24 @@ fn part2(
             logic_gates,
         }: Input,
     ) -> Option<HashSet<(String, String)>> {
-        // println!("{:?}", swap_set);
+        if swap_count == 2 {
+            // calculate
+            // compare addition
+            let addition_output: u64 =
+                wire_to_decimal(&wire_values, 'x') & wire_to_decimal(&wire_values, 'y');
 
-        if swap_count == 4 {
-            println!("swapping");
             let wire_values_unparsed = calculate_wires(Input {
-                wire_values,
-                logic_gates,
+                wire_values: wire_values.clone(),
+                logic_gates: logic_gates.clone(),
             });
 
             if wire_values_unparsed.is_none() {
                 return None;
             }
 
-            let wire_values = wire_values_unparsed.unwrap();
+            let calculated_output: u64 = wire_to_decimal(&wire_values_unparsed.unwrap(), 'z');
 
-            // println!("end");
-            let calculated_output: u64 = wire_to_decimal(&wire_values, 'z');
-            // calculate
-            // compare addition
-            let addition_output: u64 =
-                wire_to_decimal(&wire_values, 'x') + wire_to_decimal(&wire_values, 'y');
+            println!("{} = {}", calculated_output, addition_output);
 
             if calculated_output == addition_output {
                 return Some(swap_set);
@@ -233,9 +233,7 @@ fn part2(
 
         for i in 0..logic_gates.len() {
             for j in (i + 1)..logic_gates.len() {
-                // println!("{}.{}", i, j);
-
-                // If the swap has already happened in the opposite order, skip.
+                // If the wire has already been part of a swap, skip this swap option.
                 if swap_set
                     .iter()
                     .find(|(output_set0, output_set1)| {
@@ -256,16 +254,18 @@ fn part2(
                 logic_gates[i].output = swap_pair.1;
                 logic_gates[j].output = swap_pair.0;
 
-                if let Some(result) = perform_swap(
+                let result = perform_swap(
                     swap_set,
                     swap_count + 1,
                     Input {
                         wire_values: wire_values.clone(),
                         logic_gates,
                     },
-                ) {
-                    println!("{:?}", result);
-                    return Some(result);
+                );
+
+                if result.is_some() {
+                    println!("RESULT: {:?}", result);
+                    return result;
                 }
             }
         }
@@ -297,13 +297,13 @@ fn part2(
 }
 
 pub fn run() {
-    let input = process_file("input/year2024/day24-test.txt");
-
-    // println!("{:?}", input);
+    let input = process_file("input/year2024/day24-test2.txt");
 
     let part1_result = part1(input.clone());
-    let part2_result = part2(input);
 
     println!("{:?}", part1_result);
+
+    let part2_result = part2(input);
+
     println!("{}", part2_result);
 }
