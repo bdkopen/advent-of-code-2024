@@ -192,8 +192,13 @@ fn part2(
 ) -> String {
     let mut swap_gates = vec![];
 
-    // TODO: dynamically find top output
-    let highest_output = "z45";
+    // Find the final "z" output variable
+    let highest_output = logic_gates
+        .iter()
+        .map(|logic_gate| &logic_gate.output)
+        .filter(|output| output.starts_with('z'))
+        .max()
+        .expect("There must be a maximum output register");
 
     for LogicGate {
         input0,
@@ -206,11 +211,11 @@ fn part2(
 
         // All z outputs should come from a "XOR" gate.
         if gate != &Gate::XOR && is_z_output && output != highest_output {
-            println!("1 - {}", output);
             swap_gates.push(output.as_str());
             continue;
         }
 
+        // All "AND" gates must feed into an "OR" gate.
         if gate == &Gate::AND && input0 != "x00" {
             let output_valid_use = logic_gates
                 .iter()
@@ -227,12 +232,12 @@ fn part2(
                 );
 
             if output_valid_use.is_none() {
-                println!("2 - {}", output);
                 swap_gates.push(output.as_str());
                 continue;
             }
         }
 
+        // "XOR" gates will never feed directly into an "OR" gate.
         if gate == &Gate::XOR {
             let output_valid_use = logic_gates
                 .iter()
@@ -249,7 +254,6 @@ fn part2(
                 );
 
             if output_valid_use.is_some() {
-                println!("3 - {}", output);
                 swap_gates.push(output.as_str());
                 continue;
             }
@@ -268,9 +272,8 @@ fn part2(
                 .expect("Input must have a starting character"),
         );
 
-        // For the "XOR" gate, any intermediate inputs must drive the "z" output.
+        // The "XOR" gate that includes two intermediate outputs must have a "z" output.
         if gate == &Gate::XOR && !input0_primary_input && !input1_primary_input && !is_z_output {
-            println!("4 - {}", output);
             swap_gates.push(output.as_str());
             continue;
         }
@@ -285,10 +288,8 @@ pub fn run() {
     let input = process_file("input/year2024/day24.txt");
 
     let part1_result = part1(input.clone());
-
-    println!("{:?}", part1_result);
-
     let part2_result = part2(input);
 
+    println!("{}", part1_result);
     println!("{}", part2_result);
 }
