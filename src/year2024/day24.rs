@@ -1,5 +1,5 @@
 use crate::util::file::read;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Gate {
@@ -186,118 +186,103 @@ fn part1(
 
 fn part2(
     Input {
-        wire_values,
+        wire_values: _,
         logic_gates,
     }: Input,
 ) -> String {
-    //TODO:
-    // There are 4 pairs of output wires that need to be swapped
-    // 1. Randomly switch 4 pairs of wires
-    // 2. Determine the output with that combination of swaps
-    // 3. Run an addition calculation to verify that the swaps were successful
+    let mut swap_gates = vec![];
 
-    fn perform_swap(
-        swap_set: HashSet<(String, String)>,
-        swap_count: u8,
-        Input {
-            wire_values,
-            logic_gates,
-        }: Input,
-    ) -> Option<HashSet<(String, String)>> {
-        if swap_count == 2 {
-            // calculate
-            // compare addition
-            let addition_output: u64 =
-                wire_to_decimal(&wire_values, 'x') & wire_to_decimal(&wire_values, 'y');
+    // TODO: dynamically find top output
+    let highest_output = "z45";
 
-            let wire_values_unparsed = calculate_wires(Input {
-                wire_values: wire_values.clone(),
-                logic_gates: logic_gates.clone(),
-            });
+    for LogicGate {
+        input0,
+        input1,
+        output,
+        gate,
+    } in logic_gates.iter()
+    {
+        let is_z_output = output.starts_with('z');
 
-            if wire_values_unparsed.is_none() {
-                return None;
-            }
-
-            let calculated_output: u64 = wire_to_decimal(&wire_values_unparsed.unwrap(), 'z');
-
-            println!("{} = {}", calculated_output, addition_output);
-
-            if calculated_output == addition_output {
-                return Some(swap_set);
-            }
-
-            // if addition valid, return Some
-            return None;
+        // All z outputs should come from a "XOR" gate.
+        if gate != &Gate::XOR && is_z_output && output != highest_output {
+            println!("1 - {}", output);
+            swap_gates.push(output.as_str());
+            continue;
         }
 
-        for i in 0..logic_gates.len() {
-            for j in (i + 1)..logic_gates.len() {
-                // If the wire has already been part of a swap, skip this swap option.
-                if swap_set
-                    .iter()
-                    .find(|(output_set0, output_set1)| {
-                        return [output_set0, output_set1].contains(&&logic_gates[i].output)
-                            || [output_set0, output_set1].contains(&&logic_gates[j].output);
-                    })
-                    .is_some()
-                {
-                    continue;
-                };
-
-                let mut swap_set = swap_set.clone();
-
-                let swap_pair = (logic_gates[i].output.clone(), logic_gates[j].output.clone());
-                swap_set.insert(swap_pair.clone());
-
-                let mut logic_gates = logic_gates.clone();
-                logic_gates[i].output = swap_pair.1;
-                logic_gates[j].output = swap_pair.0;
-
-                let result = perform_swap(
-                    swap_set,
-                    swap_count + 1,
-                    Input {
-                        wire_values: wire_values.clone(),
-                        logic_gates,
+        if gate == &Gate::AND && input0 != "x00" {
+            let output_valid_use = logic_gates
+                .iter()
+                .filter(|logic_gate| logic_gate.gate == Gate::OR)
+                .find(
+                    |LogicGate {
+                         input0: sub_input0,
+                         input1: sub_input1,
+                         output: _sub_output,
+                         gate: _sub_gate,
+                     }| {
+                        return sub_input0 == output || sub_input1 == output;
                     },
                 );
 
-                if result.is_some() {
-                    println!("RESULT: {:?}", result);
-                    return result;
-                }
+            if output_valid_use.is_none() {
+                println!("2 - {}", output);
+                swap_gates.push(output.as_str());
+                continue;
             }
         }
 
-        return None;
+        if gate == &Gate::XOR {
+            let output_valid_use = logic_gates
+                .iter()
+                .filter(|logic_gate| logic_gate.gate == Gate::OR)
+                .find(
+                    |LogicGate {
+                         input0: sub_input0,
+                         input1: sub_input1,
+                         output: _sub_output,
+                         gate: _sub_gate,
+                     }| {
+                        return sub_input0 == output || sub_input1 == output;
+                    },
+                );
+
+            if output_valid_use.is_some() {
+                println!("3 - {}", output);
+                swap_gates.push(output.as_str());
+                continue;
+            }
+        }
+
+        let input0_primary_input = ['x', 'y'].contains(
+            &input0
+                .chars()
+                .next()
+                .expect("Input must have a starting character"),
+        );
+        let input1_primary_input = ['x', 'y'].contains(
+            &input1
+                .chars()
+                .next()
+                .expect("Input must have a starting character"),
+        );
+
+        // For the "XOR" gate, any intermediate inputs must drive the "z" output.
+        if gate == &Gate::XOR && !input0_primary_input && !input1_primary_input && !is_z_output {
+            println!("4 - {}", output);
+            swap_gates.push(output.as_str());
+            continue;
+        }
     }
 
-    if let Some(result) = perform_swap(
-        HashSet::new(),
-        0,
-        Input {
-            wire_values,
-            logic_gates,
-        },
-    ) {
-        let mut output_array = vec![];
+    swap_gates.sort();
 
-        result.iter().for_each(|(output0, output1)| {
-            output_array.push(output0.to_string());
-            output_array.push(output1.to_string());
-        });
-
-        output_array.sort();
-
-        return output_array.join(",");
-    }
-
-    panic!("Failed to find a valid swap set.");
+    return swap_gates.join(",");
 }
 
 pub fn run() {
-    let input = process_file("input/year2024/day24-test2.txt");
+    let input = process_file("input/year2024/day24.txt");
 
     let part1_result = part1(input.clone());
 
