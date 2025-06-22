@@ -33,3 +33,4 @@ I am using Advent of Code as a way to learn Rust. I attempt to use best practice
 | 22  | [Monkey Market](https://adventofcode.com/2024/day/22) | [Source](src/year2024/day22.rs) |
 | 23  | [LAN Party](https://adventofcode.com/2024/day/23) | [Source](src/year2024/day23.rs) |
 | 24  | [Crossed Wires](https://adventofcode.com/2024/day/24) | [Source](src/year2024/day24.rs) |
+| 25  | [Code Chronicle](https://adventofcode.com/2024/day/25) | [Source](src/year2024/day25.rs) |
