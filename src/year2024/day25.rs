@@ -97,7 +97,7 @@ pub fn run() {
     let input = process_file("input/year2024/day25.txt");
 
     let part1_result = part1(input);
-    let part2_result = "";
+    let part2_result = "Chronicle Delivered";
 
     println!("{}", part1_result);
     println!("{}", part2_result);
